@@ -1,3 +1,10 @@
+# WRO 2026 Future Engineers | Team: The Pits JO — Robot: Meteoro
+### Instituto Técnico Jesús Obrero (ITJO)
+
+> 🇪🇸 **Nota para jueces y evaluadores en español:** Puedes leer la versión oficial traducida al español directamente en [README_ES.md](README_ES.md).
+
+---
+
 Engineering materials
 ====
 
