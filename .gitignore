@@ -1,0 +1,33 @@
+# --- COMPILADOS Y ARCHIVOS TEMPORALES DE ARDUINO ---
+*.hex
+*.elf
+*.bin
+build/
+*.build.bin
+*.o
+
+# --- CONFIGURACIÓN DE EDITORES Y ENVIROMENTS (VS Code / PlatformIO / IDEs) ---
+.vscode/
+.idea/
+.pio/
+*.user
+
+# --- ARCHIVOS BASURA DE SISTEMAS OPERATIVOS ---
+# Windows
+Thumbs.db
+ehthru.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- ARCHIVOS TEMPORALES DE CAD / 3D Y DOCUMENTOS ---
+~$*.docx
+~$*.xlsx
+*.tmp
+*.bak
+*.swp
+*.log
