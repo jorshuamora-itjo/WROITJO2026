@@ -18,5 +18,5 @@ Este repositorio contiene todos los materiales de ingeniería, modelos CAD, diag
 * [`models/`](./models/): Archivos de los modelos utilizados por impresoras 3D, máquinas de corte láser y máquinas CNC para fabricar los elementos del vehículo.
 * [`photos/`](./photos/): Galería fotográfica unificada que contiene tanto fotos oficiales del equipo, vistas del carro y registros del proceso de armado y programación.
 * [`video/`](./video/): Archivo con el enlace directo al video de demostración de manejo en pista.
-* [`schematics/`](./schematics/): Diagramas esquemáticos de los componentes electromecánicos, ilustrando todos los elementos (componentes electrónicos y motores) utilizados en el vehículo y cómo se conectan entre sí..
+* [`schematics/`](./schematics/): Diagramas esquemáticos de los componentes electromecánicos, ilustrando todos los elementos (componentes electrónicos y motores) utilizados en el vehículo y cómo se conectan entre sí.
 * [`docs/`](./docs/): Documentación adicional, hojas de datos, tablas de pines y listas de verificación en foso.
