@@ -6,7 +6,7 @@
 ---
 # Materiales de Ingeniería
 
-Este repositorio contiene los materiales de ingeniería del modelo de vehículo autónomo participante en la competencia WRO Future Engineers.
+Este repositorio contiene todos los materiales de ingeniería, modelos CAD, diagramas esquemáticos, código fuente y documentación técnica del vehículo autónomo **Meteoro**, desarrollado por el equipo **The Pits JO** del **Instituto Técnico Jesús Obrero (ITJO)** para la competencia **WRO Future Engineers 2026**.
 
 ## Contenido
 
