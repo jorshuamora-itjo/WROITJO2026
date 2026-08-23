@@ -54,15 +54,3 @@ The primary power source consists of 3 Series Lithium Batteries (3S) delivering 
 | **DSN-MINI-360 Regulator (Channel 1)** | 3S LiPo Pack | 5.0V DC Reg. | Master Arduino Nano, MPU6050 Gyroscope, and 3x US-016 |
 | **DSN-MINI-360 Regulator (Channel 2)** | 3S LiPo Pack | 5.0V DC Reg. | Slave Arduino Nano, Ackermann Servomotor, and PixyCam2 |
 | **Common Ground (GND)** | N/A | 0V (GND) | Common physical ground connection for all boards and sensors |
-
-### Power Distribution Diagram (Power Topology)
-
-```text
-[ 3x Lithium Battery Pack 3.7V (11.1V - 12.6V Total) ]
-                          │
-                          ├──> [ VM Input TB6612FNG Driver ] ──> Rear DC Motor
-                          │
-                          ├──> [ DSN-MINI-360 Channel 1 (5V) ] ──> Master Arduino + MPU6050 + 3x US-016
-                          │
-                          └──> [ DSN-MINI-360 Channel 2 (5V) ] ──> Slave Arduino + Servomotor + PixyCam2
-
