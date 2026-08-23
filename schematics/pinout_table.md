@@ -1,6 +1,6 @@
 # Pinout and Electronic Connections Table
 
-This document describes the detailed electrical architecture, complete pin mapping for the Arduino Nano boards (Master and Slave), communication buses ($I^2C$ and SPI), and the two-channel regulated power distribution network powered by lithium batteries.
+This document describes the detailed electrical architecture, complete pin mapping for the Arduino Nano boards (Master and Slave), communication buses (I2C and SPI), and the two-channel regulated power distribution network powered by lithium batteries.
 
 ---
 
@@ -16,10 +16,10 @@ The Master Arduino Nano processes distance measurements from the three US-016 ul
 | | TRIG | D9 | Output | 5.0V Logic | Ultrasonic pulse trigger |
 | **Front Ultrasonic (US-016)** | ECHO | D10 | Input | 5.0V Logic | Return pulse duration measurement |
 | | TRIG | D11 | Output | 5.0V Logic | Ultrasonic pulse trigger |
-| **Gyroscope (MPU6050)** | SDA | A4 (SDA) | I²C Data | 5.0V Logic | Data bus for Z-axis angular velocity estimation |
-| | SCL | A5 (SCL) | I²C Clock | 5.0V Logic | I²C clock synchronization (100 kHz) |
-| **I2C Interconnection (Slave)** | SDA | A4 (SDA) | I²C Data | 5.0V Logic | Sends angle and speed to Slave Nano (0x08) |
-| | SCL | A5 (SCL) | I²C Clock | 5.0V Logic | Shared I²C bus clock |
+| **Gyroscope (MPU6050)** | SDA | A4 (SDA) | I2C Data | 5.0V Logic | Data bus for Z-axis angular velocity estimation |
+| | SCL | A5 (SCL) | I2C Clock | 5.0V Logic | I2C clock synchronization (100 kHz) |
+| **I2C Interconnection (Slave)** | SDA | A4 (SDA) | I2C Data | 5.0V Logic | Sends angle and speed to Slave Nano (0x08) |
+| | SCL | A5 (SCL) | I2C Clock | 5.0V Logic | Shared I2C bus clock |
 | **Master Logic Power** | 5V / VIN | 5V | Power In | 5.0V Reg. | 5.0V output from DSN-MINI-360 Buck (Channel 1) |
 | | GND | GND | Ground | 0V | Unified ground point |
 
@@ -27,7 +27,7 @@ The Master Arduino Nano processes distance measurements from the three US-016 ul
 
 ## 2. Pin Mapping - Arduino Nano Slave (Actuators and Vision)
 
-The Slave Arduino Nano processes visual information from the PixyCam2 via SPI, handles commands sent by the Master via I²C, and controls the servomotor and DC motor.
+The Slave Arduino Nano processes visual information from the PixyCam2 via SPI, handles commands sent by the Master via I2C, and controls the servomotor and DC motor.
 
 | Component / Module | Component Pin | Arduino Nano Pin | Signal Type | Voltage Level | Description / Function |
 | :--- | :---: | :---: | :---: | :---: | :--- |
@@ -37,8 +37,8 @@ The Slave Arduino Nano processes visual information from the PixyCam2 via SPI, h
 | **PixyCam2 Camera** | SPI MOSI | D11 / ICSP | SPI Data Out | 5.0V Logic | Control and initialization commands |
 | | SPI MISO | D12 / ICSP | SPI Data In | 5.0V Logic | 60 FPS reading of color blocks and signatures |
 | | SPI SCK | D13 / ICSP | SPI Clock | 5.0V Logic | High-speed SPI communication clock |
-| **I2C Interconnection (Master)** | SDA | A4 (SDA) | I²C Data | 5.0V Logic | Bus for receiving commands from Master Nano |
-| | SCL | A5 (SCL) | I²C Clock | 5.0V Logic | Shared I²C bus clock |
+| **I2C Interconnection (Master)** | SDA | A4 (SDA) | I2C Data | 5.0V Logic | Bus for receiving commands from Master Nano |
+| | SCL | A5 (SCL) | I2C Clock | 5.0V Logic | Shared I2C bus clock |
 | **Slave Logic Power** | 5V / VIN | 5V | Power In | 5.0V Reg. | 5.0V output from DSN-MINI-360 Buck (Channel 2) |
 | | GND | GND | Ground | 0V | Unified ground point |
 
