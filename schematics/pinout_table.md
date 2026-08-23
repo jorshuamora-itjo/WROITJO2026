@@ -51,6 +51,6 @@ The primary power source consists of 3 Series Lithium Batteries (3S) delivering 
 | Power Stage / Module | Input Source | Regulated Output | Powered Components |
 | :--- | :--- | :--- | :--- |
 | **Lithium Batteries (3S Series)** | 3x 3.7V Li Battery | 11.1V - 12.6V Direct | VM power input for TB6612FNG Driver (DC Motor) |
-| **DSN-MINI-360 Regulator (Channel 1)** | 3S LiPo Pack | 5.0V DC Reg. | Master Arduino Nano, MPU6050 Gyroscope, and 3x US-016 |
-| **DSN-MINI-360 Regulator (Channel 2)** | 3S LiPo Pack | 5.0V DC Reg. | Slave Arduino Nano, Ackermann Servomotor, and PixyCam2 |
+| **DSN-MINI-360 Regulator (Channel 1)** | 3S Lithium Pack | 5.0V DC Reg. | Master Arduino Nano, MPU6050 Gyroscope, 3x US-016, and PixyCam2 |
+| **DSN-MINI-360 Regulator (Channel 2)** | 3S Lithium Pack | 5.0V DC Reg. | Slave Arduino Nano, Ackermann Servomotor |
 | **Common Ground (GND)** | N/A | 0V (GND) | Common physical ground connection for all boards and sensors |
