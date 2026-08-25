@@ -6,15 +6,15 @@ This document describes the detailed electrical architecture, complete pin mappi
 
 ## 1. Pin Mapping - Arduino Nano Master (Navigation, Vision and Sensors)
 
-The Master Arduino Nano processes visual information from the PixyCam2 via SPI, distance measurements from the three US-016 ultrasonic sensors and angular data from the MPU6050 gyroscope, executing PID control and calculating the steering setpoint.
+The Master Arduino Nano processes visual information from the PixyCam2 via SPI, distance measurements from the three RCWL-1601 ultrasonic sensors and angular data from the MPU6050 gyroscope, executing PID control and calculating the steering setpoint.
 
 | Component / Module | Component Pin | Arduino Nano Pin | Signal Type | Voltage Level | Description / Function |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Left Ultrasonic (US-016)** | ECHO | D6 | Input | 5.0V Logic | Return pulse duration measurement |
+| **Left Ultrasonic (RCWL-1601)** | ECHO | D6 | Input | 5.0V Logic | Return pulse duration measurement |
 | | TRIG | D7 | Output | 5.0V Logic | Ultrasonic pulse trigger |
-| **Right Ultrasonic (US-016)** | ECHO | D8 | Input | 5.0V Logic | Return pulse duration measurement |
+| **Right Ultrasonic (RCWL-1601)** | ECHO | D8 | Input | 5.0V Logic | Return pulse duration measurement |
 | | TRIG | D9 | Output | 5.0V Logic | Ultrasonic pulse trigger |
-| **Front Ultrasonic (US-016)** | ECHO | D10 | Input | 5.0V Logic | Return pulse duration measurement |
+| **Front Ultrasonic (RCWL-1601)** | ECHO | D10 | Input | 5.0V Logic | Return pulse duration measurement |
 | | TRIG | D11 | Output | 5.0V Logic | Ultrasonic pulse trigger |
 | **Gyroscope (MPU6050)** | SDA | A4 (SDA) | I2C Data | 5.0V Logic | Data bus for Z-axis angular velocity estimation |
 | | SCL | A5 (SCL) | I2C Clock | 5.0V Logic | I2C clock synchronization (100 kHz) |
