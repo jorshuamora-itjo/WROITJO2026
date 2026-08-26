@@ -2,7 +2,7 @@
 
 # WRO 2026 — Future Engineers
 ### **Team:** The Pits JO &nbsp;|&nbsp; **Robot:** Meteoro
-**Jesús Obrero Technical Institute (ITJO)**
+**Instituto Técnico Jesús Obrero (ITJO)**
 
 [![C++](https://img.shields.io/badge/Language-C%2B%2B17-00599C?style=for-the-badge&logo=cplusplus&logoColor=white)](https://isocpp.org/)
 [![WRO 2026](https://img.shields.io/badge/WRO-Future_Engineers_2026-orange?style=for-the-badge)](https://wro-association.org/)
