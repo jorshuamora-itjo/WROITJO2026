@@ -9,14 +9,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Arduino_Nano-00979D?style=for-the-badge&logo=arduino&logoColor=white)](https://www.arduino.cc/)
 
-<br>
-
-<p align="center">
-  <img src="photos/banner_liceo.png" alt="Logo Instituto Técnico Jesús Obrero" width="150"/>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="photos/logo_wro.png" alt="Logo WRO Future Engineers" width="220"/>
-</p>
-
 ---
 
 > 🇬🇧 **Note for international judges:** You can read the official main documentation in English at [`README.md`](README.md).
