@@ -109,12 +109,6 @@ El diseño dimensional de Meteoro se esquematizó previamente sobre papel milime
 * **Ancho Total:** 13 cm
 * **Diámetro de Ruedas:** 40 mm (Grosor: 20 mm)
 
-<p align="center">
-  <img src="photos/engranajes_3d.png" alt="Engranajes Biselados 90 Grados a Medida" width="400"/>
-  <br>
-  <em>Figura 1: Juego de engranajes biselados a 90º diseñados e impresos a medida.</em>
-</p>
-
 Al reubicar las baterías en el centro del chasis inferior, el motor DC de tracción tuvo que orientarse de forma paralela al eje trasero. Debido a que los engranajes rectos convencionales operan únicamente de forma coplanar y los engranajes doble biselados comercializados por LEGO no ofrecían la relación exacta deseada sin alterar las cotas del vehículo, diseñamos e imprimimos en 3D un juego de **engranajes biselados a 90º a medida**.
 
 Esta relación **(1:1.5)** mantiene el balance óptimo para nuestra masa total de **660 g**, proporcionando velocidad lineal sin comprometer el par de arranque (torque).
