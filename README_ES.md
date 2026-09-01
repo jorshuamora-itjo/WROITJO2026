@@ -394,7 +394,7 @@ Para eliminar por completo las caídas de voltaje que reiniciaban el sistema, di
 
 ### Esquemáticos Electrónicos de Referencia
 
-En la carpeta `schematics/` del repositorio se encuentran disponibles las guías visuales de interconexión:
+En la carpeta [`schematics/`](schematics/)` del repositorio se encuentran disponibles las guías visuales de interconexión:
 
 * `schematics/nano_master_diagram.jpg`: Diagrama de conexiones del circuito Maestro (Sensores, Visión, I2C y Canal 1 de Potencia).
 * `schematics/nano_slave_diagram.jpg`: Diagrama de conexiones del circuito Esclavo (Motores, Driver L298N, Servomotor y Canal 2 de Potencia).
