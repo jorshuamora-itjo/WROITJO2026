@@ -232,6 +232,7 @@ float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) 
     }
     return (alpha * lecturaActual) + ((1.0 - alpha) * lecturaAnterior);
 }
+```cpp
 
 ---
 
