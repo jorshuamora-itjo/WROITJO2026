@@ -38,100 +38,133 @@ Este repositorio contiene todos los materiales de ingeniería, modelos CAD, diag
 
 > **Aclaración Técnica de Nomenclatura**
 > 
-> Para evitar redundancias o confusiones a lo largo de este documento y de todo el repositorio técnico:
-> 1. Se denominará **"Pit Dinoco"** (o versión 1.1) a la primera plataforma experimental construida por el equipo para nuestra primera competencia WRO.
-> 2. Se denominará **"Meteoro"** (o versión 2.0) al prototipo actual de competencias, fruto del rediseño integral electromecánico y de software.
+> Para facilitar la lectura de la documentación y evitar confusiones a lo largo de este proyecto, utilizamos la siguiente norma:
+> 1. **Pit Dinoco (Versión 1.1):** Es nuestro primer auto experimental. Con él aprendimos las bases de la competencia y detectamos las principales fallas a corregir.
+> 2. **Meteoro (Versión 2.0):** Es el vehículo definitivo de competencia. Nace del rediseño completo de la parte mecánica, los circuitos de potencia y el programa de control.
+
+---
+
+## Comparativa Visual de los Prototipos
+
+| Criterio de Diseño | Pit Dinoco ($v1.1$) | Meteoro ($v2.0$) |
+| :--- | :--- | :--- |
+| **Estructura** | Piso único (monocapa) con cables expuestos. | Chasis modular de doble piso con canaletas internas. |
+| **Dirección** | Giro simple con servo expuesto a desgaste. | Geometría Ackermann con mecanismo de Yugo Escocés. |
+| **Tracción** | Engranajes planos visibles. | Motor longitudinal con engranajes biselados a 90°. |
+| **Reparto de Peso** | Baterías atrás (provocaba subviraje). | Baterías al centro del chasis inferior (equilibrio 50/50). |
+| **Sensores de Distancia** | Módulos HC-SR04 pegados al frente. | Sensores RCWL-1601 integrados dentro del alerón F1. |
 
 ---
 
 ## Introducción
 
-El equipo **The Pits JO** está integrado por estudiantes del 6.º año de Educación Media Técnica del **Instituto Técnico Jesús Obrero (ITJO)**. Nuestra formación abarca las especialidades de Electrónica y Telemática, lo que nos ha permitido abordar el desarrollo del vehículo desde una perspectiva integral de ingeniería mecatrónica.
+El equipo **The Pits JO** está integrado por estudiantes del 6.º año de Educación Media Técnica del **Instituto Técnico Jesús Obrero (ITJO)**. Nuestra formación académica abarca las especialidades de Electrónica y Telemática, lo que nos brindó las herramientas necesarias para construir un auto autónomo desde cero.
 
-Aunque en la práctica real del taller todos los integrantes colaboramos de forma transversal en el armado, cableado, programación y resolución de imprevistos (*"todos hacemos todo"*), hemos definido una estructura de responsabilidades alineada a las áreas de especialización académica de cada miembro:
+Aunque en la práctica diaria en el taller aplicamos la filosofía de *"todos hacemos todo"* (armar, soldar, programar y probar en pista), distribuimos la responsabilidad principal según la especialidad de cada integrante:
 
 | Integrante | Mención Académica | Roles Principales | Contribuciones Clave y Trabajos Cruzados |
 | :--- | :--- | :--- | :--- |
-| **Samuel Castillo** | Técnico Profesional Industrial en Electrónica | Diseñador Mecánico 3D, Mantenimiento e Integración Electromecánica | Modelado CAD de los chasis v1.1 y v2.0, calibración mecánica de la dirección, fabricación 3D de engranajes customizados y desarrollo de rutinas de código para actuadores. |
-| **Jorshua Mora** | Técnico Profesional Industrial en Telemática | Programador Principal de Software, Especialista en Visión y Pits | Desarrollo del firmware base, calibración del sistema PixyCam2, mantenimiento correctivo en foso y apoyo directo en el ruteo e integración de conexiones eléctricas. |
-| **Winston Garrido** | Técnico Profesional Industrial en Electrónica | Algoritmos de Control PID, Diseñador de Esquemas y Gestión de Repositorio | Ajuste del control PID adaptativo, diseño de la distribución de potencia, elaboración del pinout/esquemas eléctricos y estructuración técnica del repositorio GitHub. |
+| **Samuel Castillo** | Técnico Profesional Industrial en Electrónica | Diseñador Mecánico 3D, Mantenimiento e Integración Electromecánica | Diseñó en 3D las piezas y el chasis de los prototipos $v1.1$ y $v2.0$, calibró el sistema de dirección, fabricó los engranajes a medida y apoyó en las rutinas de prueba de los motores. |
+| **Jorshua Mora** | Técnico Profesional Industrial en Telemática | Programador Principal de Software, Especialista en Visión y Pits | Desarrolló el código base, configuró el sensor de visión PixyCam2, atendió el mantenimiento rápido en la zona de competencia (pits) y ayudó a conectar la red de cables. |
+| **Winston Garrido** | Técnico Profesional Industrial en Electrónica | Algoritmos de Control PID, Diseñador de Esquemas y Gestión de Repositorio | Calibró el sistema de control de trayectoria $PD$, diseñó la red de alimentación eléctrica, dibujó los esquemáticos y organizó toda la documentación técnica en GitHub. |
 
-Por recomendación y petición expresa de nuestro mentor técnico, la estructura arquitectónica del firmware y la selección de la geometría de viraje fueron evaluadas bajo estrictas pruebas de repetición antes de su implementación definitiva en el prototipo v2.0.
-
----
-
-## Análisis Crítico y Lecciones Aprendidas (Pit Dinoco v1.1)
-
-Tras concluir nuestra primera experiencia en la World Robot Olympiad (WRO), realizamos un análisis crítico y riguroso sobre el desempeño en pista de **Pit Dinoco**. Aquella primera iteración nos permitió identificar fallas de ingeniería que condicionaban el rendimiento general:
-
-* **Ruteo de Cableado Deficiente:** La ausencia de canaletas integradas derivó en conductores doblados o expuestos a rozamiento con elementos móviles, ocasionando falsos contactos durante las pruebas.
-* **Distribución de Peso Inadecuado:** La concentración del peso (baterías de litio) en el voladizo posterior desplazó el centro de gravedad (CG), privando de adherencia al eje delantero. Esto provocaba que el robot subvirara (*"se fuera de frente"*) en las esquinas de 90º.
-* **Interferencia Física de Sensores:** Los sensores ultrasónicos se encontraban en posiciones contiguas a las ruedas delanteras, llegando a colisionar mecánicamente durante los virajes máximos.
-* **Acoples Mecánicos Improvisados:** El mecanismo de dirección utilizaba un brazo de servo adaptado manualmente que, bajo carga continua, sufría deformación por fricción térmica (llegando a derretirse o barrerse el estriado del motor).
-
-### Pilares de Diseño para Meteoro v2.0
-
-Con base en las lecciones extraídas de Pit Dinoco, establecimos cuatro pilares de diseño para el prototipo **Meteoro**:
-
-1. **Accesibilidad y Mantenibilidad:** Acceso rápido a las baterías y módulos lógicos sin necesidad de desmontar la estructura principal en foso.
-2. **Gestión Térmica y Eléctrica de Cables:** Canaletas de ruteo internas y pasacables dedicados para aislar líneas de potencia de líneas de señal.
-3. **Robustez Mecánica:** Piezas impresas con perfiles de alta resistencia (5 perímetros de pared y relleno Giroide al 20%) en áreas sometidas a impacto o vibración.
-4. **Cinemática Corregida:** Integración de dirección estilo F1 basada en geometría Ackermann y acoplamiento de Yugo Escocés.
-
-Mantuvimos la combinación que demostró eficiencia operacional en el prototipo anterior: elementos lógicos en impresión 3D, electrónica estandarizada y componentes mecánicos complementarios de LEGO Technic (ejes estriados, cojinetes de precisión y ruedas de 40mm de diámetro por 20mm de grosor).
+> **Nota sobre Orientación Técnica**  
+> Por recomendación y petición expresa de nuestro mentor técnico, la estructura arquitectónica del código y la geometría de la dirección fueron sometidas a intensas pruebas de repetición en pista antes de ser aprobadas e instaladas en el prototipo Meteoro ($v2.0$).
 
 ---
 
-## Componentes y Sensores
+## Diagnóstico del Prototipo v1.1 ("Pit Dinoco") y Lecciones Aprendidas
 
-Reemplazamos los módulos tradicionales HC-SR04 por sensores **RCWL-1601**. A pesar de mantener la misma interfaz física de 4 pines (`VCC`, `TRIG`, `ECHO`, `GND`), estos presentan mejoras sustanciales en inmunidad al ruido acústico y tiempos de refresco:
+Al finalizar nuestra primera participación con Pit Dinoco, analizamos detalladamente su comportamiento para entender por qué cometía errores en la pista. Este análisis nos reveló cuatro problemas mecánicos y eléctricos clave:
 
-| Parámetro Técnico | Módulo Anterior: HC-SR04 | Módulo Actual: RCWL-1601 | Impacto en el Vehículo "Meteoro" |
+* **Cables Expuestos y Doblados:** Al no tener un camino ordenado para los cables, estos rozaban con las partes móviles o se doblaban en exceso, provocando fallas o falsos contactos involuntarios.
+* **Reparto de Peso Desequilibrado:** Las baterías de litio estaban colocadas en la parte trasera del auto. Esto hacía que la parte delantera quedara muy liviana, perdiendo agarre y haciendo que el auto *"se fuera de frente"* (subviraje) en las curvas cerradas de 90°.
+* **Interferencia de Sensores con las Ruedas:** Los sensores de ultrasonido estaban instalados muy cerca de las ruedas delanteras. Cuando el servomotor giraba al máximo, las ruedas golpeaban los sensores físicamente.
+* **Desgaste en la Dirección:** El brazo mecánico conectado al servomotor era plano y de plástico simple. Con el uso continuo y el calor de la fricción, el plástico se ablandaba y se barría, perdiendo la alineación del centro.
+
+### Nuevos Principios de Diseño Arquitectónico para "Meteoro" (v2.0)
+
+Tomando como base los errores de Pit Dinoco, establecimos cuatro pilares esenciales para construir a Meteoro:
+
+1. **Facilidad de Mantenimiento:** Diseñar un sistema donde se puedan cambiar las baterías o revisar las placas sin necesidad de desarmar todo el vehículo en la mesa de trabajo.
+2. **Orden y Protección Eléctrica:** Crear canaletas internas que guíen los cables y mantengan separados los cables de alimentación (potencia) de los cables de datos (señales).
+3. **Resistencia Mecánica:** Imprimir las piezas de alto impacto con patrones de relleno resistentes (Giroide al 20% y 5 capas de pared) para soportar vibraciones y posibles choques.
+4. **Dirección Precisa:** Adoptar un sistema de dirección estilo F1 guiado por la geometría Ackermann y el mecanismo de Yugo Escocés.
+
+---
+
+## Inspiraciones Técnicas y Cambios de Ingeniería
+
+Mantuvimos la combinación que nos dio excelentes resultados en durabilidad: chasis principal en impresión 3D (PLA+/PETG), electrónica estándar y componentes mecánicos de LEGO Technic (ejes estriados en cruz, cojinetes de precisión y ruedas de 40 mm de diámetro por 20 mm de grosor).
+
+Reemplazamos los sensores tradicionales HC-SR04 por el modelo **RCWL-1601**. Aunque se conectan exactamente igual (pines `VCC`, `TRIG`, `ECHO` y `GND`), este nuevo modelo ofrece ventajas marcadas en espacio y precisión:
+
+| Parámetro Técnico | Módulo Anterior: HC-SR04 | Módulo Actual: RCWL-1601 | Impacto en el Vehículo Meteoro |
 | :--- | :--- | :--- | :--- |
-| **Factor de Forma** | Estándar (45 x 20 mm) | Compacto (21 x 18 mm) | Permite su integración interna en el alerón delantero. |
-| **Tensión de Operación** | 5.0V DC rígido | 3.0V - 5.5V DC | Inmunidad ante ligeras fluctuaciones de la línea de control. |
-| **Ángulo de Apertura** | aprox. 15º (Propenso a ecos) | < 12º (Haz concentrado) | Reduce falsas lecturas con paredes acrílicas en diagonal. |
-| **Precisión de Rango** | ±3 mm | ±1 mm | Estabilidad en el cálculo de error para el bucle PID. |
+| **Dimensiones** | Estándar (45 mm $\times$ 20 mm) | Compacto (21 mm $\times$ 18 mm) | Permite empotrar los tres sensores dentro del alerón frontal. |
+| **Voltaje de Trabajo** | 5.0V DC rígido | 3.0V a 5.5V DC | Soporta pequeñas variaciones de voltaje sin fallar. |
+| **Ángulo de Visión** | $\approx 15^\circ$ (propenso a ecos) | $< 12^\circ$ (haz estrecho) | Evita lecturas falsas al rebotar en paredes en diagonal. |
+| **Precisión de Medida** | $\pm 3\text{ mm}$ | $\pm 1\text{ mm}$ | Proporciona medidas estables para corregir la trayectoria suavemente. |
 
-Para la optimización del tiempo de respuesta del centrado PID, analizamos soluciones aplicadas por equipos internacionales de alto rendimiento en la WRO, tomando como referencia técnica la disposición de sensores del equipo **GammaVersion** (campeones de España WRO 2022/2025 en su análisis *"Gamma Version's Car Review"*).
+### Integración del Alerón Frontal F1
 
-* **Ventaja Cinemática:** Al adelantar los sensores respecto al eje de viraje delantero, el controlador procesa las variaciones de pared con mayor anticipación espacial, iniciando la corrección antes de ingresar a la curva.
-* **Protección Estructural Anticolisión:** Para evitar daños por impacto en caso de colisión, se diseñaron carcasas rígidas personalizadas que encastran los transductores ultrasónicos con una tolerancia de ajuste de 0.1mm.
-* **Orientación Espacial:** Para no exceder los límites dimensionales reglamentarios, los sensores laterales (izquierdo y derecho) se montaron verticalmente, mientras que el frontal se mantuvo en disposición horizontal.
+Para mejorar la rapidez de respuesta en las esquinas, estudiamos soluciones aplicadas por equipos internacionales de la WRO, tomando como inspiración la disposición de sensores del equipo **GammaVersion** (campeones de España WRO).
+
+* **Ventaja Cinemática:** Al colocar los sensores por delante del eje delantero de las ruedas, el vehículo "ve" las paredes con anticipación espacial antes de ingresar físicamente a la curva.
+* **Protección contra Impactos:** Diseñamos carcasas de plástico rígido con una tolerancia de ajuste de 0.1 mm que protegen las cápsulas de los sensores ante cualquier roce contra los muros.
+* **Orientación Espacial:** Para mantener el vehículo dentro de las dimensiones máximas permitidas (30 cm $\times$ 20 cm), colocamos los sensores laterales en posición vertical y el sensor frontal en posición horizontal.
 
 ---
 
-## Especificaciones Mecánicas y Cinemática de Dirección
+## Especificaciones Mecánicas y Planos
 
-El diseño dimensional de Meteoro se esquematizó previamente sobre papel milimetrado para garantizar el cumplimiento de la norma WRO (máximo 30cm de largo x 20cm de ancho):
+Antes de modelar en la computadora, dibujamos los planos a escala real sobre papel milimetrado para verificar que el auto estuviera dentro de las reglas de la competencia:
 
-* **Largo Total:** 26 cm
-* **Ancho Total:** 13 cm
-* **Diámetro de Ruedas:** 40 mm (Grosor: 20 mm)
+* **Largo Total:** 26 cm (Límite máximo permitido: 30 cm)
+* **Ancho Total:** 13 cm (Límite máximo permitido: 20 cm)
+* **Diámetro de Ruedas:** 40 mm (Ancho: 20 mm)
 
-Al reubicar las baterías en el centro del chasis inferior, el motor DC de tracción tuvo que orientarse de forma paralela al eje trasero. Debido a que los engranajes rectos convencionales operan únicamente de forma coplanar y los engranajes doble biselados comercializados por LEGO no ofrecían la relación exacta deseada sin alterar las cotas del vehículo, diseñamos e imprimimos en 3D un juego de **engranajes biselados a 90º a medida**.
+<p align="center">
+  <img src="photos/planos_milimetrados.png" alt="Esquema dimensional dibujado a mano sobre papel milimetrado" width="450"/>
+  <br>
+  <em>Figura 1: Esquema dimensional dibujado a mano sobre papel milimetrado para la validación de cotas.</em>
+</p>
 
-Esta relación **(1:1.5)** mantiene el balance óptimo para nuestra masa total de **660 g**, proporcionando velocidad lineal sin comprometer el par de arranque (torque).
+### Reingeniería del Tren de Transmisión: Engranajes Biselados Custom 3D
 
-### Geometría de Dirección Ackermann
+Al reubicar las baterías en el piso inferior centrado, tuvimos que colocar el motor DC en sentido longitudinal (paralelo al chasis). Como las piezas comerciales no nos daban la relación de giro exacta que necesitábamos, diseñamos e imprimimos en 3D un conjunto de **engranajes biselados a 90°**:
 
-Para eliminar el arrastre de los neumáticos delanteros en virajes de 90º implementamos una geometría de dirección Ackermann impulsada por un servomotor **MG90S** alojado en el chasis mediante un mecanismo de guía ranurada y pasador (basado cinemáticamente en el Yugo Escocés).
+$$\text{Relación de Transmisión} = \frac{\text{Dientes del Engranaje Conducido}}{\text{Dientes del Engranaje Motriz}} = \frac{24}{16} = 1.5$$
+
+Esta relación $1:1.5$ ofrece el equilibrio justo entre aceleración de arranque y velocidad máxima para desplazar los $\approx 660\text{ g}$ de peso de nuestro auto.
+
+---
+
+## Mecanismo de Dirección Ackermann y Convergencia de Ejes
+
+Para evitar que las ruedas delanteras arrastren o patinen al dar curvas de 90°, implementamos una geometría de dirección Ackermann accionada por un servomotor **MG90S** mediante una guía con pasador (basada en el Yugo Escocés).
+
+**Condición Cinemática Ideal:**
 
 $$\cot(\theta_{\text{ext}}) - \cot(\theta_{\text{int}}) = \frac{w}{L}$$
 
-Donde $w = 128\text{ mm}$ (ancho de vía) y $L = 165\text{ mm}$ (distancia entre ejes).
+Donde $w = 128\text{ mm}$ (distancia entre ruedas delanteras) y $L = 165\text{ mm}$ (distancia entre ejes delantero y trasero).
 
-Tras evaluar comportamientos geométricos (Ackermann al 100%, Paralelo y Agresivo >100%), se ajustó la línea de convergencia desplazando el punto de cruce 2.5 cm por detrás del centro del eje trasero. Esto otorga un comportamiento equilibrado:
+**Ajuste de Giro en Pista:**
 
-* **En Recta:** Evita oscilaciones o hipersensibilidad en correcciones PID pequeñas.
-* **En Curva:** Permite que la rueda interior ($\theta_{\text{int}}$) abra un ángulo mayor que la exterior ($\theta_{\text{ext}}$), evitando que el vehículo arrastre el tren delantero.
+Ajustamos el punto donde convergen las líneas de la dirección 2.5 cm por detrás del eje trasero. Esto brinda un comportamiento ideal:
+
+* **En Tramos Rectos:** El auto se mantiene firme sin hacer movimientos bruscos o zigzags.
+* **En Curvas:** La rueda interna ($\theta_{\text{int}}$) gira con un ángulo mayor que la rueda externa ($\theta_{\text{ext}}$), haciendo que la vuelta sea limpia y sin fricción excesiva.
 
 ---
 
-## Distribución de Chasis (Estructura de Dos Plantas)
+## Estructura de Doble Piso y Ruteo Eléctrico
 
-* **Planta Inferior (Chasis Base):** Aloja el paquete de baterías Li-ion 3S dispuesto de forma longitudinal centrado, el motor DC con su caja reductora biselada, el servomotor de dirección y el alerón con los 3 sensores RCWL-1601. Posee una ventana inferior para el reemplazo de baterías sin desmontar el nivel superior.
-* **Planta Superior (Carcasa Superior F1):** Soporta el driver de potencia L298N, la cámara de visión PixyCam2 y las tarjetas Arduino Nano (Maestro/Esclavo). Su geometría aerodinámica actúa como cubierta del servo y enruta los conductores hacia la parte posterior.
+Meteoro está dividido en dos niveles independientes:
+
+* **Planta Inferior (Base Mecánica y Potencia):** Contiene el paquete de baterías Li-ion 3S centrado, el motor de tracción con sus engranajes a 90°, la dirección servoguiada y el alerón frontal F1. Cuenta además con una escotilla inferior para cambiar la batería en segundos.
+* **Planta Superior (Cerebro Lógico y Visión):** Sostiene el controlador de motor L298N, la cámara PixyCam2 y los dos microcontroladores Arduino Nano (Maestro y Esclavo). Su carcasa protege el servomotor y mantiene todos los cables ordenados por canaletas.
 
 ---
 
@@ -148,4 +181,5 @@ Tras evaluar comportamientos geométricos (Ackermann al 100%, Paralelo y Agresiv
 © 2026 **The Pits JO** — Instituto Técnico Jesús Obrero.  
 Todos los derechos reservados. Distribuido bajo la [Licencia MIT](LICENSE).
 
+</div>
 </div>
