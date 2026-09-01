@@ -236,6 +236,86 @@ float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) 
 
 ---
 
+## Diseño y Evolución Mecánica
+
+### Diagnóstico Post-Mortem y Desafíos Mecánicos en Pit Dinoco (v1.1)
+
+El análisis de rendimiento durante nuestra primera participación en pista nos dio el diagnóstico real que no podíamos observar del todo durante las pruebas en el taller. Identificamos cuatro inconvenientes clave de origen mecánico y de distribución física:
+
+* **Organización del Cableado y Falta de Espacio:** En el intento de reducir las dimensiones al mínimo en una sola capa (monocapa), saturamos la zona central. Los cables de señal quedaron expuestos al roce constante con las piezas móviles del motor y la transmisión, lo que provocó fallas intermitentes por desgaste de los cables.
+* **Desbalance del Centro de Gravedad (CG):** Al colocar las baterías de litio en la parte trasera, desplazamos el centro de gravedad fuera de su punto de equilibrio ideal. Esta falta de peso sobre las ruedas delanteras redujo su agarre al suelo, generando un deslizamiento frontal evidente (subviraje) al tomar curvas de 90°.
+* **Obstáculo Físico en la Dirección:** Los sensores de ultrasonido delanteros chocaban directamente con las ruedas al girar al máximo, lo que limitaba el ángulo de viraje del vehículo.
+* **Desgaste del Brazo de Dirección:** El brazo del servomotor original (impreso y adaptado manualmente en plástico) no soportó el uso continuo. La fricción constante generó calor y terminó barriendo los dientes del engrane, desalineando el punto neutro de la dirección.
+
+---
+
+### Comparativa de Arquitectura Mecánica: v1.1 vs v2.0
+
+Mantuvimos la combinación de materiales que nos dio buenos resultados: la integración de piezas impresas en 3D (PLA+/PETG), componentes electrónicos estándar y elementos mecánicos de LEGO Technic (ejes con forma de cruz, cojinetes de precisión y ruedas de 40 mm × 20 mm).
+
+Sin embargo, para corregir las debilidades estructurales, rediseñamos el chasis por completo. A continuación se detallan las mejoras implementadas:
+
+| Criterio Constructivo | Prototipo Inicial: Pit Dinoco (v1.1) | Prototipo Competitivo: Meteoro (v2.0) | Impacto Mecánico y Dinámico |
+| :--- | :--- | :--- | :--- |
+| **Distribución del Chasis** | Una sola capa plana con componentes expuestos. | Doble piso modular interconectado. | Separa la zona de potencia de la electrónica de control y protege los componentes. |
+| **Geometría de Dirección** | Pivote directo central (giro simétrico). | Geometría Ackermann accionada por Yugo Escocés. | Elimina el arrastre no deseado de las ruedas en curvas cerradas. |
+| **Transmisión Trasera** | Engranajes rectos expuestos en el mismo plano. | Engranajes cónicos a 90° impresos en 3D. | Permite colocar el motor a lo largo del chasis y liberar espacio interior. |
+| **Ubicación de Baterías** | Colocadas en la parte trasera (detrás del eje). | Compartimento inferior centrado (entre los dos ejes). | Equilibra el centro de gravedad (50/50) y elimina el deslizamiento frontal. |
+| **Montaje de Sensores** | Soportes independientes al lado de las ruedas. | Alerón frontal tipo F1 con protección anticolisión. | Mejora la anticipación de lectura y protege los sensores ante choques. |
+| **Mantenimiento en Pits** | Desarme total necesario para cualquier cambio. | Tapa de acceso rápido en el piso inferior. | Permite cambiar baterías en segundos sin tocar la electrónica. |
+
+---
+
+### Reingeniería Mecánica en Meteoro (v2.0)
+
+#### 1. Alerón Frontal Integrado F1 (Inspiración "GammaVersion")
+Tomando como referencia la distribución de sensores del equipo **GammaVersion** en la WRO, diseñamos una estructura frontal tipo alerón mediante impresión 3D:
+
+* **Lectura Anticipada:** Ubicar los tres sensores de ultrasonido por delante del eje delantero permite al sistema detectar los muros con mayor anticipación antes de que el cuerpo del vehículo ingrese a la curva.
+* **Protección Anticolisión:** Los sensores se encajan firmemente en carcasas rígidas con un ajuste exacto de 0.1 mm, funcionando además como un parachoques protector.
+* **Distribución Eficiente:** Los sensores laterales se colocaron en posición vertical y el central en horizontal para no superar las dimensiones máximas permitidas de 30 cm × 20 cm.
+
+---
+
+#### 2. Geometría de Dirección Ackermann
+Reemplazamos el pivote simple por un sistema de dirección geométrica tipo Ackermann movido por un servomotor **MG90S** con engranajes metálicos, conectado mediante una guía ranurada con pasador (mecanismo de Yugo Escocés).
+
+$$\cot(\theta_{\text{ext}}) - \cot(\theta_{\text{int}}) = \frac{w}{L}$$
+
+Donde $w = 128\text{ mm}$ (ancho entre ruedas) y $L = 165\text{ mm}$ (distancia entre ejes).
+
+Esta configuración hace que la rueda interior ($\theta_{\text{int}}$) gire en un ángulo mayor que la exterior ($\theta_{\text{ext}}$), haciendo que ambas sigan el trazado natural de la curva sin derrapar.
+
+* **Calibración de Estabilidad:** Ajustamos la geometría para que el punto de alineación quede 2.5 cm por detrás del centro del eje trasero. Esto mantiene al vehículo firme y estable en rectas sin quitarle agilidad en los giros de 90°.
+
+---
+
+#### 3. Transmisión Rediseñada: Engranajes Cónicos Personalizados a 90°
+Para colocar las baterías en el centro del piso inferior, orientamos el motor a lo largo del chasis. Como las piezas comerciales de LEGO no nos daban la relación necesaria en el espacio disponible, diseñamos e imprimimos un par de **engranajes cónicos a 90°**:
+
+$$\text{Relación de Transmisión} = \frac{\text{Dientes Conducidos}}{\text{Dientes Motrices}} = \frac{24}{16} = 1.5$$
+
+Esta relación de 1:1.5 ofrece el equilibrio justo entre fuerza de arranque y velocidad máxima para el peso total del vehículo (660 g).
+
+---
+
+#### 4. Distribución Modular de Doble Piso
+La estructura de Meteoro simplifica las revisiones y reparaciones organizándose en dos niveles:
+
+* **Planta Inferior (Transmisión y Potencia):** Aloja el paquete de baterías Li-ion 3S en el centro, el motor principal con sus engranajes cónicos, el servomotor de dirección metálico y el alerón delantero. Incluye una tapa de acceso rápido por debajo para cambiar las baterías cómodamente.
+* **Planta Superior (Control y Sensores):** Sostiene los microcontroladores, el módulo del motor L298N, la cámara PixyCam2 y canaletas internas que mantienen los cables de señal aislados de los cables de corriente.
+
+---
+
+#### 5. Verificación de Dimensiones
+Antes del modelado final en software CAD, trazamos las medidas sobre papel milimetrado para garantizar el cumplimiento del reglamento WRO (30 cm × 20 cm):
+
+* **Largo Total:** 260 mm
+* **Ancho Total:** 130 mm
+* **Diámetro de Ruedas:** 40 mm (Ancho: 20 mm)
+
+---
+
 ## Módulos y Enlaces Directos
 
 * **Firmware del Prototipo:** [`src/`](src/)
