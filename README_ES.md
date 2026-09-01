@@ -162,8 +162,6 @@ Meteoro está dividido en dos niveles independientes:
 
 ---
 
----
-
 ## Estrategia de Navegación de Meteoro
 
 La estrategia de navegación de Meteoro utiliza una arquitectura de control de monitoreo constante (bucle cerrado) dividida en tres pilares: lectura y filtrado EMA, Máquina de Estados Finitos (FSM) y controladores en tiempo real.
