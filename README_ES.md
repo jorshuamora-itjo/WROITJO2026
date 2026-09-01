@@ -124,12 +124,6 @@ Antes de modelar en la computadora, dibujamos los planos a escala real sobre pap
 * **Ancho Total:** 13 cm (Límite máximo permitido: 20 cm)
 * **Diámetro de Ruedas:** 40 mm (Ancho: 20 mm)
 
-<p align="center">
-  <img src="photos/planos_milimetrados.png" alt="Esquema dimensional dibujado a mano sobre papel milimetrado" width="450"/>
-  <br>
-  <em>Figura 1: Esquema dimensional dibujado a mano sobre papel milimetrado para la validación de cotas.</em>
-</p>
-
 ### Reingeniería del Tren de Transmisión: Engranajes Biselados Custom 3D
 
 Al reubicar las baterías en el piso inferior centrado, tuvimos que colocar el motor DC en sentido longitudinal (paralelo al chasis). Como las piezas comerciales no nos daban la relación de giro exacta que necesitábamos, diseñamos e imprimimos en 3D un conjunto de **engranajes biselados a 90°**:
@@ -142,7 +136,7 @@ Esta relación $1:1.5$ ofrece el equilibrio justo entre aceleración de arranque
 
 ## Mecanismo de Dirección Ackermann y Convergencia de Ejes
 
-Para evitar que las ruedas delanteras arrastren o patinen al dar curvas de 90°, implementamos una geometría de dirección Ackermann accionada por un servomotor **MG90S** mediante una guía con pasador (basada en el Yugo Escocés).
+Para evitar que las ruedas delanteras arrastren o patinen al dar curvas de 90°, implementamos una geometría de dirección Ackermann accionada por un servomotor **AD002** mediante una guía con pasador (basada en el Yugo Escocés).
 
 **Condición Cinemática Ideal:**
 
