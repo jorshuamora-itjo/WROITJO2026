@@ -250,4 +250,3 @@ float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) 
 Todos los derechos reservados. Distribuido bajo la [Licencia MIT](LICENSE).
 
 </div>
-</div>
