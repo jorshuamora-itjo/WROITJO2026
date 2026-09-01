@@ -162,6 +162,81 @@ Meteoro está dividido en dos niveles independientes:
 
 ---
 
+---
+
+## Estrategia de Navegación de Meteoro
+
+La estrategia de navegación de Meteoro utiliza una arquitectura de control de monitoreo constante (bucle cerrado) dividida en tres pilares: lectura y filtrado EMA, Máquina de Estados Finitos (FSM) y controladores en tiempo real.
+
+### Definición del Algoritmo por Estados
+
+#### Estado RECTA (Centrado PD Adaptativo)
+En tramos rectos, el vehículo busca mantener una distancia equivalente respecto a las paredes laterales izquierda y derecha:
+
+$$e(t) = \frac{\text{US}_{\text{der}} - \text{US}_{\text{izq}}}{2}$$
+
+Para evitar tambaleos o sobre-correcciones bruscas causadas por pequeñas imperfecciones en el acrílico, se aplica una **Zona de Tolerancia o Zona Muerta (Deadband)** de $\pm 5.0\text{ cm}$:
+
+* Si $|e(t)| \le 5.0\text{ cm} \implies \text{error} = 0$
+* Si $e(t) > 5.0\text{ cm} \implies \text{error} = e(t) - 5.0$
+* Si $e(t) < -5.0\text{ cm} \implies \text{error} = e(t) + 5.0$
+
+El ángulo de dirección final se calcula mediante la acción del controlador Proporcional-Derivativo (PD):
+
+$$\text{Salida PD} = K_p \cdot \text{error} + K_d \cdot \frac{d e(t)}{dt}$$
+
+$$\theta_{\text{dirección}} = \theta_{\text{neutral}} + \text{Salida PD}$$
+
+Donde $\theta_{\text{neutral}} = 92^\circ$, $K_p = 10.33$ y $K_d = 14.0$.
+
+---
+
+#### Estado CURVA (Giro Asistido por Giroscopio MPU6050)
+Cuando el sensor frontal detecta una pared a una distancia $\le 75.0\text{ cm}$, la FSM cambia al estado **CURVA**:
+
+* **Determinación del Sentido (Primera Esquina):** Si es la primera esquina del recorrido ($\text{sentidoPista} == 0$), se comparan las lecturas de los sensores laterales:
+  * Si $\text{US}_{\text{izq}} > \text{US}_{\text{der}} \implies \text{Sentido Antihorario (Ángulo } 65^\circ)$
+  * Si $\text{US}_{\text{izq}} \le \text{US}_{\text{der}} \implies \text{Sentido Horario (Ángulo } 115^\circ)$
+  
+  Este valor se guarda en $\text{sentidoPista}$ y fija la dirección de giro para todas las curvas siguientes del circuito.
+
+* **Cálculo del Ángulo de Giro Acumulado / Yaw ($\theta_z$):** A partir de la velocidad de giro medida en el eje Z ($\omega_z$), se calcula la variación del ángulo acumulado:
+
+$$\theta_z(t) = \theta_z(t - \Delta t) + \left( \frac{\text{Gyro Z}_{\text{crudo}} - \text{offset}_z}{131.0} \right) \cdot \Delta t$$
+
+* **Criterio de Salida:** El giro se mantiene de forma activa hasta que el valor absoluto de la rotación acumulada alcanza la meta fijada:
+
+$$|\theta_z(t)| \ge \theta_{\text{objetivo}} \quad (\theta_{\text{objetivo}} = 72.0^\circ)$$
+
+---
+
+#### Estado COOLDOWN (Pausa de Protección Post-Curva)
+Al finalizar el giro de $72^\circ$, el vehículo entra en un periodo de estabilización (**COOLDOWN**) por $1200\text{ ms}$. Durante este intervalo:
+
+1. Se reinicia la memoria del término derivativo ($\text{error anterior} = 0$).
+2. Se pausa o ignora temporalmente la lectura del sensor frontal para evitar lecturas erróneas producidas por la inercia del giro o la pared lateral saliente.
+3. Se reanuda el control PD con las lecturas laterales para estabilizar la trayectoria antes de regresar al estado **RECTA**.
+
+---
+
+### Filtrado de Datos de Sensores (Filtro EMA Híbrido)
+
+Los sensores de ultrasonido a veces presentan fallas de lectura (*outliers*) o marcajes erróneos de $0\text{ cm}$ debido al rebote del sonido. Para solucionar esto, el algoritmo aplica un filtro híbrido **EMA (Exponential Moving Average)** con umbral de apertura:
+
+```cpp
+// Si el sensor detecta espacio abierto (> 70 cm) o error (0 cm),
+// responde instantáneamente para no perder la apertura de curva.
+// En rangos normales (muros cercanos), aplica suavizado con alpha = 0.4.
+
+float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) {
+    if (lecturaActual == 0 || lecturaActual > 70.0) {
+        return lecturaActual; // Respuesta instantánea en aperturas/errores
+    }
+    return (alpha * lecturaActual) + ((1.0 - alpha) * lecturaAnterior);
+}
+
+---
+
 ## Módulos y Enlaces Directos
 
 * **Firmware del Prototipo:** [`src/`](src/)
