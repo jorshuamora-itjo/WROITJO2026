@@ -402,6 +402,199 @@ En la carpeta [`schematics/`](schematics/) del repositorio se encuentran disponi
 
 ---
 
+## Arquitectura de Software y Lógica de Control
+
+### Evolución Histórica del Código (v1 a v4)
+
+El desarrollo del software para nuestro vehículo no ocurrió de la noche a la mañana. Enfrentar la pista real nos enseñó que la teoría pura se estrella rápidamente cuando los sensores rebotan en esquinas abiertas o cuando las ruedas tiemblan por ruido numérico. A continuación, documentamos el proceso evolutivo de nuestras firmas de código guardadas en la carpeta `src/history/` hasta llegar a la versión actual en `src/current/`.
+
+* **Versión 1: Monolítico y Bloqueante (`src/history/v1_pid_control.ino`)**
+  * **Arquitectura:** Un solo Arduino Uno ejecutando todo el trabajo de forma secuencial.
+  * **Mecanismo:** Medición con la función `pulseIn()`, la cual pausaba el procesador hasta 12 ms por cada sensor. Al medir 3 sensores, el procesador perdía más de 35 ms inmóvil por ciclo.
+  * **Falla Crítica:** Al llegar a la esquina, el sensor frontal perdía la pared o leía rebotes erróneos. El algoritmo PID intentaba corregir distancias inexistentes, generando giros bruscos de dirección y choques contra la pared exterior.
+
+* **Versión 2: Transición por Estados (`src/history/v2_pid_switch.ino`)**
+  * **Innovación:** Implementamos por primera vez una Máquina de Estados Finita (`RECTA` y `CURVA`) para separar la corrección del carril de la maniobra de giro.
+  * **Control:** Reducción automática de velocidad al detectar que se aproximaba un muro (fijada al 80% de la velocidad máxima).
+  * **Falla Crítica:** El carro volvía al estado `RECTA` antes de terminar de salir del cruce. Al detectar el muro lateral demasiado cerca inmediatamente después del giro, el PID aplicaba un volantazo inverso instantáneo.
+
+* **Versión 3: Temporizadores y Cooldown (`src/history/v3_fsm_cooldown.ino`)**
+  * **Innovación:** Se introdujo la constante `COOLDOWN_CURVA` (1500 ms) para impedir que el auto reingresara al estado de curva inmediatamente tras salir de una.
+  * **Dirección:** Primera versión en registrar si la pared abierta estaba a la izquierda o derecha antes de iniciar la maniobra fija.
+  * **Falla Crítica:** Depender de tiempos fijos (`DURACION_GIRO = 2500 ms`) causaba descarrilamientos si la batería bajaba su carga: a menor voltaje, el auto recorría menos distancia en el mismo tiempo, quedando apuntando en diagonal.
+
+* **Versión 4: Filtro de Mediana y Detección de Huecos (`src/history/v4_median_filter.ino`)**
+  * **Innovación:** Incorporación del filtro de mediana sobre arreglos de 4 muestras (`filtroMediana4`) para ignorar picos de ruido causados por la textura del muro.
+  * **Lógica:** Detección de aperturas de carril cuando la distancia medida superaba la `distanciaHueco` (90 cm).
+  * **Punto de Quiebre:** Aunque el filtro de mediana limpió la señal, el cálculo de ordenamiento consumía ciclos de procesador apreciables. Además, el auto aún no sabía con certeza absoluta cuánto había rotado sobre su propio eje.
+
+---
+
+### Tabla Comparativa de Evolución de Software
+
+| Criterio Térmico / Lógico | v1 (Monolítico) | v2 (Estados Simples) | v3 (Cooldown) | v4 (Filtro Mediana) | Versión Actual (`src/current/`) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Procesador** | 1 Arduino Uno | 1 Arduino Uno | 1 Arduino Uno | 1 Arduino Uno | 2 Arduino Nano (I2C) |
+| **Lectura Ultrasónica** | `pulseIn()` bloqueante | `pulseIn()` directo | `pulseIn()` con tiempo | Mediana (4 muestras) | Librería NewPing + EMA |
+| **Detección de Giro** | Distancia a pared | Umbral frontal fijo | Distancia + Tiempo | Detección de Hueco | Giroscopio MPU6050 Integrado |
+| **Filtro de Ruido** | Sin filtro (Crudo) | Umbral rígido | Umbral rígido | Filtro Mediana 4p | EMA ($\alpha = 0.4$) + Límite 180 cm |
+| **Seguridad de Sentido** | Inexistente | Reactivo instantáneo | Bloqueo por evento | Memoria de carácter | `sentidoPista` Permanente (EEPROM/RAM) |
+
+---
+
+### Arquitectura de Red Distribuida (Maestro / Esclavo)
+
+Para garantizar un tiempo de ciclo ($\Delta t$) constante y libre de retrasos en la generación de señales de velocidad, el código actual ubicado en `src/current/` divide la carga computacional en dos procesadores a través del bus I2C a 100 kHz.
+
+#### Análisis del Código Esclavo (`src/current/nano_slave.cpp`)
+
+El microcontrolador Esclavo funciona como un controlador periférico dedicado exclusivamente al movimiento físico de la dirección y la tracción, manteniendo la lógica limpia de interrupciones de tiempo de sensores.
+
+##### 1. Interrupción y Búfer Seguro
+Para evitar interferencias de datos mientras se ejecutan las órdenes de los motores, los datos recibidos mediante el evento `Wire.onReceive(recibirDatosI2C)` se almacenan en variables protegidas marcadas con el calificador `volatile`:
+
+```cpp
+volatile byte anguloRecibido = 90;
+volatile byte velRecibida = 255;
+volatile bool actualizarMotores = false;
+```
+
+La función que atiende la llegada de datos simplemente toma los valores transmitidos y activa una señal de aviso (bandera), dejando que la activación física de los motores ocurra en el ciclo principal (`loop()`) para no congelar la comunicación I2C:
+
+```cpp
+void recibirDatosI2C(int cuantosBytes) {
+  if (cuantosBytes >= 2) {
+    anguloRecibido = Wire.read();    
+    velRecibida = Wire.read(); 
+    actualizarMotores = true; // Notifica al ciclo principal
+  }
+}
+```
+
+##### 2. Algoritmo de Arranque Progresivo (`arrancarSuave`)
+Al encender el auto desde el reposo, el motor eléctrico exige un pico de corriente inicial (*inrush current*) que puede generar interferencias eléctricas en la línea de alimentación. El programa esclavo previene esto aumentando la velocidad de manera escalonada en cuestión de microsegundos:
+
+```cpp
+void arrancarSuave() {
+  digitalWrite(pinB, LOW);
+  for (int vel = 0; vel <= velRecibida; vel++) {
+    analogWrite(pinA, vel);
+    delayMicroseconds(3921); // Rampa de aceleración ~1 segundo total
+  }
+}
+```
+
+### Análisis del Código Maestro (`src/current/nano_master.cpp`)
+
+El microcontrolador Maestro es el cerebro principal: analiza lo que sucede alrededor con los sensores, mide los giros del auto, administra los cambios de modo y calcula los ajustes necesarios para mantener la ruta ideal.
+
+---
+
+#### Filtrado Digital: Promedio Móvil Exponencial (EMA)
+
+Para eliminar los temblores en las ruedas durante los tramos rectos sin sobrecargar el procesador con ordenamientos de listas complejas, implementamos un filtro de suavizado de datos (EMA).
+
+**Ecuación Matemática:**
+$$y[k] = \alpha \cdot x[k] + (1 - \alpha) \cdot y[k-1]$$
+
+Donde:
+* $x[k]$ representa la lectura cruda obtenida por el sensor en el instante actual $k$.
+* $y[k-1]$ es la distancia filtrada que calculamos en el paso anterior.
+* $\alpha = 0.4$ es el factor de suavizado que configuramos mediante pruebas prácticas.
+
+**Tratamiento Espacial de Cero (0 cm = 180 cm):**
+Cuando la pared desaparece en un cruce, los sensores ultrasónicos devuelven un valor de 0 cm debido a la ausencia de eco. Interpretamos esto como espacio totalmente libre asignándole una distancia teórica de 180.0 cm, evitando así divisiones por cero o correcciones erróneas:
+
+```cpp
+float filtrarLectura(float lecturaCruda, float lecturaAnterior) {
+  float lecturaProcesada = lecturaCruda;
+  if (lecturaCruda <= 0.0) {
+    lecturaProcesada = 180.0; // Espacio abierto en esquina
+  }
+
+  // Si detectamos espacio abierto (> 70 cm), permitimos respuesta rápida
+  if (lecturaProcesada > 70.0) {
+    return lecturaProcesada; 
+  }
+
+  // Suavizado EMA para navegación fina cerca de muros
+  float alpha = 0.4;
+  return (alpha * lecturaProcesada) + ((1.0 - alpha) * lecturaAnterior);
+}
+```
+
+### Integración Inercial del Giroscopio MPU6050
+
+A diferencia de las versiones anteriores, los giros en la versión actual no dependen de rebotar ondas en muros inexistentes. Calculamos la rotación sumando de forma continua la velocidad de giro ($\omega_z$) medida por el sensor de movimiento MPU6050 a través de la conexión I2C (dirección `0x68`):
+
+**Cálculo del Ángulo de Rotación:**
+$$\theta_z = \sum \left( \frac{\text{giroZ}}{131.0} \right) \cdot \Delta t$$
+
+Donde el valor 131.0 LSB/(°/s) corresponde a la escala de sensibilidad de ±250°/s configurada en el sensor MPU6050.
+
+```cpp
+// En el bucle dentro del estado CURVA
+float giroZ = (leerGiroscopioZ() - offsetZ) / 131.0; 
+anguloZ_acumulado += (giroZ * dt);
+
+if (abs(anguloZ_acumulado) >= ANGULO_OBJETIVO) { // ANGULO_OBJETIVO = 72.0°
+  estadoActual = COOLDOWN;
+  tiempoInicioCooldown = millis();
+}
+```
+
+### Máquina de Estados Finita y Lógica de Pista
+
+* **Memoria de Sentido de Pista (`sentidoPista`):** Durante el primer giro de la carrera (`sentidoPista == 0`), el vehículo analiza qué lado ofrece mayor apertura y graba permanentemente la dirección del circuito. Una vez asignada la variable, las 11 curvas restantes del recorrido leen directamente `sentidoPista`, ignorando lecturas erróneas causadas por rebotes acústicos.
+
+#### Controlador PD con Zona Muerta (Zona Azul)
+
+En el modo `RECTA`, el vehículo se mantiene centrado entre ambas paredes midiendo la diferencia de centrado $e(t)$:
+
+$$e(t) = \frac{\text{distDer} - \text{distIzq}}{2}$$
+
+**Filtro de Zona Azul (±5 cm):**
+Para evitar correcciones innecesarias por imperfecciones o relieves en la pared de la pista, se aplica una zona muerta de ±5 cm:
+
+```cpp
+const float ZONA_AZUL = 5.0; 
+float error = 0; 
+
+if (abs(distancia_al_centro) <= ZONA_AZUL) {
+  error = 0; 
+}
+else {
+  if (distancia_al_centro > 0) error = distancia_al_centro - ZONA_AZUL; 
+  else error = distancia_al_centro + ZONA_AZUL;
+}
+```
+
+**Ecuación Proporcional-Derivativa:**
+$$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t-\Delta t)}{\Delta t}$$
+
+* **Ganancia Proporcional ($K_p = 10.33$):** Responde a la magnitud del descentrado del vehículo.
+* **Ganancia Derivativa ($K_d = 14.0$):** Frena el balanceo lateral prediciendo la velocidad con la que el auto se acerca al muro.
+* **Límite Estricto de Giro:** La salida $u(t)$ está acotada a ±15° alrededor del punto medio del servomotor (92°), restringiendo el ángulo físico de la dirección a la ventana comprendida entre 57° y 127°.
+
+---
+
+### Mantenibilidad del Código y Guía de Parámetros de Pista
+
+Para agilizar el proceso de calibración en el área de pits, los parámetros dinámicos clave están centralizados en las líneas 22 a 35 de `src/current/nano_master.cpp`:
+
+```cpp
+// PARÁMETROS CRÍTICOS A CALIBRAR EN PISTA
+const float DIST_DETECCION_FRONT = 75.0; // Distancia (cm) para iniciar viraje
+const float ANGULO_OBJETIVO = 72.0;       // Grados reales MPU6050 para completar curva
+const unsigned long TIEMPO_COOLDOWN = 1200;// Inmunidad tras salir de curva (ms)
+
+// CONSTANTES DE CONTROL
+float Kp = 10.33;  // Ganancia Proporcional de centrado
+float Kd = 14.0;   // Ganancia Derivativa de centrado
+```
+
+---
+
 ## Módulos y Enlaces Directos
 
 * **Firmware del Prototipo:** [`src/`](src/)
