@@ -193,8 +193,8 @@ Donde $\theta_{\text{neutral}} = 92^\circ$, $K_p = 10.33$ y $K_d = 14.0$.
 Cuando el sensor frontal detecta una pared a una distancia $\le 75.0\text{ cm}$, la FSM cambia al estado **CURVA**:
 
 * **Determinación del Sentido (Primera Esquina):** Si es la primera esquina del recorrido ($\text{sentidoPista} == 0$), se comparan las lecturas de los sensores laterales:
-  * Si $\text{US}_{\text{izq}} > \text{US}_{\text{der}} \implies \text{Sentido Antihorario (Ángulo } 65^\circ)$
-  * Si $\text{US}_{\text{izq}} \le \text{US}_{\text{der}} \implies \text{Sentido Horario (Ángulo } 115^\circ)$
+   * **Si $\text{US}_{\text{izq}} > \text{US}_{\text{der}}$:** Sentido Antihorario (Ángulo 65°)
+   * **Si $\text{US}_{\text{izq}} \le \text{US}_{\text{der}}$:** Sentido Horario (Ángulo 115°)
   
   Este valor se guarda en $\text{sentidoPista}$ y fija la dirección de giro para todas las curvas siguientes del circuito.
 
