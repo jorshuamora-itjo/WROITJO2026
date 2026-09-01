@@ -316,6 +316,92 @@ Antes del modelado final en software CAD, trazamos las medidas sobre papel milim
 
 ---
 
+## Arquitectura Electrónica y Sistema de Potencia
+
+En la robótica autónoma, la estabilidad del software depende totalmente de la solidez del sistema eléctrico que lo respalda. En nuestro primer prototipo (Pit Dinoco), sufríamos reinicios inesperados en el cerebro del carro debido a interferencias de energía provocadas por el motor principal y a las exigencias puntuales del motor de dirección.
+
+Para Meteoro (v2.0), rediseñamos por completo la arquitectura electrónica dividiendo el trabajo entre dos microcontroladores conectados en red y construyendo un sistema de energía separado e independiente para cada necesidad.
+
+---
+
+### Arquitectura Lógica Distribuida (Maestro / Esclavo vía I2C)
+
+Para evitar retrasos en el envío de señales a los motores mientras se leen sensores al mismo tiempo, repartimos el trabajo entre dos placas Arduino Nano interconectadas mediante el bus de datos I2C (en la dirección `0x08`):
+
+* **Arduino Nano Maestro:** Funciona como el "cerebro" del vehículo. Se encarga de medir las distancias de los tres sensores de ultrasonido, calcular la inclinación con el giroscopio MPU6050, reconocer colores con la cámara PixyCam2 (conectada por bus SPI) y procesar las ecuaciones matemáticas de control para guiar el carro.
+* **Arduino Nano Esclavo:** Funciona como el "músculo" del sistema. Recibe de forma rápida la información enviada por el Maestro y acciona directamente el servomotor de la dirección y el módulo L298N que da movimiento al motor principal.
+
+---
+
+### Asignación de Pines (Pinout Map)
+
+Para consultar los esquemas gráficos completos e ilustrados, puedes revisar la carpeta `schematics/` en el repositorio.
+
+#### Mapeo de Pines - Arduino Nano Maestro
+
+| Módulo / Componente | Pin del Componente | Pin Arduino Nano | Tipo de Señal | Nivel Lógico | Función en el Sistema |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Ultrasonido Izquierdo** | ECHO | D6 | Entrada | 5.0 V | Recepción de eco para pared izquierda |
+| | TRIG | D7 | Salida | 5.0 V | Emisión de pulso de ultrasonido |
+| **Ultrasonido Derecho** | ECHO | D8 | Entrada | 5.0 V | Recepción de eco para pared derecha |
+| | TRIG | D9 | Salida | 5.0 V | Emisión de pulso de ultrasonido |
+| **Ultrasonido Frontal** | ECHO | D10 | Entrada | 5.0 V | Recepción de eco para detectar curvas |
+| | TRIG | D11 | Salida | 5.0 V | Emisión de pulso de ultrasonido |
+| **Giroscopio (MPU6050)** | SDA | A4 | I2C Data | 5.0 V | Lectura de giro en el eje Z |
+| | SCL | A5 | I2C Clock | 5.0 V | Reloj de sincronización (100 kHz) |
+| **Interconexión I2C (Esclavo)** | SDA | A4 | I2C Data | 5.0 V | Envío de orden de dirección y velocidad |
+| | SCL | A5 | I2C Clock | 5.0 V | Canal de reloj compartido |
+| **Cámara PixyCam2** | MOSI / MISO / SCK | D11 / D12 / D13 | SPI Bus | 5.0 V | Reconocimiento visual a 60 cuadros por segundo |
+| **Alimentación Lógica** | 5V / GND | 5V / GND | Potencia | 5.0 V Reg. | Entrada desde el Regulador Canal 1 |
+
+---
+
+#### Mapeo de Pines - Arduino Nano Esclavo
+
+| Módulo / Componente | Pin del Componente | Pin Arduino Nano | Tipo de Señal | Nivel Lógico | Función en el Sistema |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Servo de Dirección** | Signal (PWM) | D2 | PWM Salida | 5.0 V | Ajuste de ángulo para dirección Ackermann |
+| **Driver L298N (Motor DC)** | IN1 / A1 | D5 | PWM Salida | 5.0 V | Control de velocidad para la tracción |
+| | IN2 / A2 | D6 | Salida Digital | 5.0 V | Sentido de marcha (LOW para avanzar) |
+| **Interconexión I2C (Maestro)** | SDA | A4 | I2C Data | 5.0 V | Recepción de comandos desde el Maestro |
+| | SCL | A5 | I2C Clock | 5.0 V | Canal de reloj compartido |
+| **Alimentación Lógica** | 5V / GND | 5V / GND | Potencia | 5.0 V Reg. | Entrada desde el Regulador Canal 2 |
+
+---
+
+### Red de Distribución de Potencia y Regulación
+
+La fuente de energía principal consiste en un paquete de 3 baterías de litio conectadas en serie (3S) que entregan una tensión nominal de 11.1 V (llegando a 12.6 V a carga completa).
+
+Para eliminar por completo las caídas de voltaje que reiniciaban el sistema, dividimos la corriente usando dos reguladores de voltaje independientes (módulos Buck DSN-MINI-360):
+
+| Etapa de Potencia | Fuente de Entrada | Salida Regulada | Componentes Alimentados |
+| :--- | :--- | :--- | :--- |
+| **Baterías de Litio (3S)** | Paquete 3 × 3.7 V | 11.1 V - 12.6 V Directo | Entrada de energía para el motor principal (Driver L298N) |
+| **Regulador Buck 1 (Canal 1)** | Paquete de Litio 3S | 5.0 V DC Regulado | Arduino Nano Maestro, Giroscopio MPU6050, 3 Sensores Ultrasónicos y PixyCam2 |
+| **Regulador Buck 2 (Canal 2)** | Paquete de Litio 3S | 5.0 V DC Regulado | Arduino Nano Esclavo y Servomotor MG90S |
+| **Masa Común (GND)** | N/A | 0 V | Unión de cables de tierra para todas las placas y sensores |
+
+---
+
+### Beneficios del Aislamiento de Potencia
+
+* **Protección ante Exigencias de Energía:** Cuando el servomotor realiza giros muy marcados en curvas cerradas, consume energía únicamente del Canal 2. Esto evita que el voltaje de la cámara o los procesadores baje del límite operativo de 4.5 V.
+* **Filtrado de Interferencia:** El motor de tracción recibe energía directa de la batería. Los reguladores de voltaje aislados limpian los picos de corriente y el ruido eléctrico generados por el driver L298N.
+* **Referencia Común de Tierra:** A pesar de tener regulaciones separadas, todos los cables negativos (0 V / GND) se unen en un solo punto para garantizar que la información transmitida por el bus I2C sea clara y precisa.
+
+---
+
+### Esquemáticos Electrónicos de Referencia
+
+En la carpeta `schematics/` del repositorio se encuentran disponibles las guías visuales de interconexión:
+
+* `schematics/nano_master_diagram.jpg`: Diagrama de conexiones del circuito Maestro (Sensores, Visión, I2C y Canal 1 de Potencia).
+* `schematics/nano_slave_diagram.jpg`: Diagrama de conexiones del circuito Esclavo (Motores, Driver L298N, Servomotor y Canal 2 de Potencia).
+* `schematics/pinout_table.md`: Documento de consulta rápida para verificación de conexiones durante las pruebas en pits.
+
+---
+
 ## Módulos y Enlaces Directos
 
 * **Firmware del Prototipo:** [`src/`](src/)
