@@ -714,20 +714,20 @@ The selection of components for the Meteoro (v2.0) autonomous vehicle was based 
 
 | Component | Quantity | Technical Function in Meteoro (v2.0) | Datasheet |
 | :--- | :---: | :--- | :---: |
-| **Arduino Nano (ATmega328P)** | 2 | **Distributed Processing:**<br>• *Master:* Responsible for reading sensors (RCWL-1601, MPU-6050, PixyCam2) and calculating path corrections (PD control).<br>• *Slave:* Generates electrical PWM signals to control the main motor and steering servo motor. | [Datasheet](docs/datasheets/arduino_nano.pdf) |
-| **DSN-MINI-360 Buck Regulator** | 2 | **Isolated Power Regulation:**<br>• *Channel 1:* Steps down main voltage from 11.1 V - 12.6 V to a stable ~5.0 V for logic and sensors.<br>• *Channel 2:* Supplies an independent 5.0 V to the servo motor to prevent sudden power drops to the microcontrollers. | [Datasheet](docs/datasheets/dsn_mini_360.pdf) |
-| **L298N H-Bridge** | 1 | **Power Module for Drive:**<br>Amplifies current and allows changing the rotation direction of the main 11.1 V DC motor. | [Datasheet](docs/datasheets/l298n.pdf) |
-| **MPU-6050 Gyroscope / Accelerometer** | 1 | **Inertial Navigation:**<br>Measures vertical-axis yaw rate ($\omega_z$) via the I2C bus to software-calculate precise actual 72° turns. | [Datasheet](docs/datasheets/mpu6050.pdf) |
-| **RCWL-1601 Ultrasonic Sensor** | 3 | **Environment Reading:**<br>Measures wall distance (Left, Front, and Right) by firing sound bursts at 5.0 V. | [Datasheet](docs/datasheets/rcwl_1601.pdf) |
-| **AD002 Servo Motor** | 1 | **Steering Control:**<br>Metal-geared servo configured to adjust front wheels according to the Ackermann steering system. | [Datasheet](docs/datasheets/ad002_servo.pdf) |
-| **Yellow TT DC Motor** | 1 | **Rear Wheel Drive:**<br>DC motor connected to transmission with 90° bevel gears (1:1.5 speed ratio). | [Datasheet](docs/datasheets/motor_tt.pdf) |
+| **Arduino Nano (ATmega328P)** | 2 | **Distributed Processing:**<br>• *Master:* Responsible for reading sensors (RCWL-1601, MPU-6050, PixyCam2) and calculating path corrections (PD control).<br>• *Slave:* Generates electrical PWM signals to control the main motor and steering servo motor. | [Datasheet](docs/datasheets/arduino_nano.PDF) |
+| **DSN-MINI-360 Buck Regulator** | 2 | **Isolated Power Regulation:**<br>• *Channel 1:* Steps down main voltage from 11.1 V - 12.6 V to a stable ~5.0 V for logic and sensors.<br>• *Channel 2:* Supplies an independent 5.0 V to the servo motor to prevent sudden power drops to the microcontrollers. | [Datasheet](docs/datasheets/buck_converter_mini_360_dc.pdf) |
+| **L298N H-Bridge** | 1 | **Power Module for Drive:**<br>Amplifies current and allows changing the rotation direction of the main 11.1 V DC motor. | [Datasheet](docs/datasheets/control_driver_bridge_h_l298n.PDF) |
+| **MPU-6050 Gyroscope / Accelerometer** | 1 | **Inertial Navigation:**<br>Measures vertical-axis yaw rate ($\omega_z$) via the I2C bus to software-calculate precise actual 72° turns. | [Datasheet](docs/datasheets/gyroscope_mpu-6050.md) |
+| **RCWL-1601 Ultrasonic Sensor** | 3 | **Environment Reading:**<br>Measures wall distance (Left, Front, and Right) by firing sound bursts at 5.0 V. | [Datasheet](docs/datasheets/ultrasonic_sensor_rcwl-1601.md) |
+| **AD002 Servo Motor** | 1 | **Steering Control:**<br>Metal-geared servo configured to adjust front wheels according to the Ackermann steering system. | [Datasheet](docs/datasheets/servo_motor_ad002.md) |
+| **Yellow TT DC Motor** | 1 | **Rear Wheel Drive:**<br>DC motor connected to transmission with 90° bevel gears (1:1.5 speed ratio). | [Datasheet](docs/datasheets/tt_motor.md) |
 | **3S Li-ion Lithium Batteries** | 3 | **Primary Power Source:**<br>Set of 3 lithium cells in series (11.1 V nominal / 12.6 V fully charged) to power both motors and regulators. | [Datasheet](docs/datasheets/battery_3s.pdf) |
 
 ---
 
 ### Notes on Organization and Technical Files
 
-The files linked in the **Datasheet** column are part of the static project documentation and are stored in the folder: `docs/datasheets/`.
+The files linked in the **Datasheet** column are part of the static project documentation and are stored in the folder: [`docs/datasheets/`](docs/datasheets/).
 
 ---
 
