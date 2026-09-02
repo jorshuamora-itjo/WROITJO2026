@@ -185,7 +185,7 @@ $$\text{Salida PD} = K_p \cdot \text{error} + K_d \cdot \frac{d e(t)}{dt}$$
 
 $$\theta_{\text{dirección}} = \theta_{\text{neutral}} + \text{Salida PD}$$
 
-Donde $\theta_{\text{neutral}} = 92^\circ$, $K_p = 10.33$ y $K_d = 14.0$.
+Donde $\theta_{\text{neutral}} = 92^\circ$, $K_p = 10.33$  y  $K_d = 14.0$.
 
 ---
 
