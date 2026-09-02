@@ -64,9 +64,9 @@ Aunque en la práctica diaria en el taller aplicamos la filosofía de *"todos ha
 
 | Integrante | Mención Académica | Roles Principales | Contribuciones Clave y Trabajos Cruzados |
 | :--- | :--- | :--- | :--- |
-| **Samuel Castillo** | Técnico Profesional Industrial en Electrónica | Diseñador Mecánico 3D, Mantenimiento e Integración Electromecánica | Diseñó en 3D las piezas y el chasis de los prototipos $v1.1$ y $v2.0$, calibró el sistema de dirección, fabricó los engranajes a medida y apoyó en las rutinas de prueba de los motores. |
+| **Samuel Castillo** | Técnico Profesional Industrial en Electrónica | Diseñador Mecánico 3D, Mantenimiento e Integración Electromecánica | Diseñó en 3D las piezas y el chasis de los prototipos  $v1.1$  y  $v2.0$, calibró el sistema de dirección, fabricó los engranajes a medida y apoyó en las rutinas de prueba de los motores. |
 | **Jorshua Mora** | Técnico Profesional Industrial en Telemática | Programador Principal de Software, Especialista en Visión y Pits | Desarrolló el código base, configuró el sensor de visión PixyCam2, atendió el mantenimiento rápido en la zona de competencia (pits) y ayudó a conectar la red de cables. |
-| **Winston Garrido** | Técnico Profesional Industrial en Electrónica | Algoritmos de Control PID, Diseñador de Esquemas y Gestión de Repositorio | Calibró el sistema de control de trayectoria $PD$, diseñó la red de alimentación eléctrica, dibujó los esquemáticos y organizó toda la documentación técnica en GitHub. |
+| **Winston Garrido** | Técnico Profesional Industrial en Electrónica | Algoritmos de Control PID, Diseñador de Esquemas y Gestión de Repositorio | Calibró el sistema de control de trayectoria  $PD$, diseñó la red de alimentación eléctrica, dibujó los esquemáticos y organizó toda la documentación técnica en GitHub. |
 
 > **Nota sobre Orientación Técnica**  
 > Por recomendación y petición expresa de nuestro mentor técnico, la estructura arquitectónica del código y la geometría de la dirección fueron sometidas a intensas pruebas de repetición en pista antes de ser aprobadas e instaladas en el prototipo Meteoro ($v2.0$).
@@ -101,7 +101,7 @@ Reemplazamos los sensores tradicionales HC-SR04 por el modelo **RCWL-1601**. Aun
 
 | Parámetro Técnico | Módulo Anterior: HC-SR04 | Módulo Actual: RCWL-1601 | Impacto en el Vehículo Meteoro |
 | :--- | :--- | :--- | :--- |
-| **Dimensiones** | Estándar (45 mm $\times$ 20 mm) | Compacto (21 mm $\times$ 18 mm) | Permite empotrar los tres sensores dentro del alerón frontal. |
+| **Dimensiones** | Estándar (45 mm  $\times$  20 mm) | Compacto (21 mm  $\times$  18 mm) | Permite empotrar los tres sensores dentro del alerón frontal. |
 | **Voltaje de Trabajo** | 5.0V DC rígido | 3.0V a 5.5V DC | Soporta pequeñas variaciones de voltaje sin fallar. |
 | **Ángulo de Visión** | $\approx 15^\circ$ (propenso a ecos) | $< 12^\circ$ (haz estrecho) | Evita lecturas falsas al rebotar en paredes en diagonal. |
 | **Precisión de Medida** | $\pm 3\text{ mm}$ | $\pm 1\text{ mm}$ | Proporciona medidas estables para corregir la trayectoria suavemente. |
@@ -112,7 +112,7 @@ Para mejorar la rapidez de respuesta en las esquinas, estudiamos soluciones apli
 
 * **Ventaja Cinemática:** Al colocar los sensores por delante del eje delantero de las ruedas, el vehículo "ve" las paredes con anticipación espacial antes de ingresar físicamente a la curva.
 * **Protección contra Impactos:** Diseñamos carcasas de plástico rígido con una tolerancia de ajuste de 0.1 mm que protegen las cápsulas de los sensores ante cualquier roce contra los muros.
-* **Orientación Espacial:** Para mantener el vehículo dentro de las dimensiones máximas permitidas (30 cm $\times$ 20 cm), colocamos los sensores laterales en posición vertical y el sensor frontal en posición horizontal.
+* **Orientación Espacial:** Para mantener el vehículo dentro de las dimensiones máximas permitidas (30 cm  $\times$  20 cm), colocamos los sensores laterales en posición vertical y el sensor frontal en posición horizontal.
 
 ---
 
@@ -130,7 +130,7 @@ Al reubicar las baterías en el piso inferior centrado, tuvimos que colocar el m
 
 $$\text{Relación de Transmisión} = \frac{\text{Dientes del Engranaje Conducido}}{\text{Dientes del Engranaje Motriz}} = \frac{24}{16} = 1.5$$
 
-Esta relación $1:1.5$ ofrece el equilibrio justo entre aceleración de arranque y velocidad máxima para desplazar los $\approx 660\text{ g}$ de peso de nuestro auto.
+Esta relación  $1:1.5$  ofrece el equilibrio justo entre aceleración de arranque y velocidad máxima para desplazar los  $\approx 660\text{ g}$  de peso de nuestro auto.
 
 ---
 
