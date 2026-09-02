@@ -196,7 +196,7 @@ Cuando el sensor frontal detecta una pared a una distancia $\le 75.0\text{ cm}$,
     * **Si `US_izq` > `US_der`:** Sentido Antihorario (Ángulo 65°)
     * **Si `US_izq` ≤ `US_der`:** Sentido Horario (Ángulo 115°)
   
-  Este valor se guarda en $\text{sentidoPista}$ y fija la dirección de giro para todas las curvas siguientes del circuito.
+  Este valor se guarda en  $\text{sentidoPista}$  y fija la dirección de giro para todas las curvas siguientes del circuito.
 
 * **Cálculo del Ángulo de Giro Acumulado / Yaw ($\theta_z$):** A partir de la velocidad de giro medida en el eje Z ($\omega_z$), se calcula la variación del ángulo acumulado:
 
@@ -209,7 +209,7 @@ $$|\theta_z(t)| \ge \theta_{\text{objetivo}} \quad (\theta_{\text{objetivo}} = 7
 ---
 
 #### Estado COOLDOWN (Pausa de Protección Post-Curva)
-Al finalizar el giro de $72^\circ$, el vehículo entra en un periodo de estabilización (**COOLDOWN**) por $1200\text{ ms}$. Durante este intervalo:
+Al finalizar el giro de  $72^\circ$, el vehículo entra en un periodo de estabilización (**COOLDOWN**) por  $1200\text{ ms}$. Durante este intervalo:
 
 1. Se reinicia la memoria del término derivativo ($\text{error anterior} = 0$).
 2. Se pausa o ignora temporalmente la lectura del sensor frontal para evitar lecturas erróneas producidas por la inercia del giro o la pared lateral saliente.
@@ -282,7 +282,7 @@ Reemplazamos el pivote simple por un sistema de dirección geométrica tipo Acke
 
 $$\cot(\theta_{\text{ext}}) - \cot(\theta_{\text{int}}) = \frac{w}{L}$$
 
-Donde $w = 128\text{ mm}$ (ancho entre ruedas) y $L = 165\text{ mm}$ (distancia entre ejes).
+Donde  $w = 128\text{ mm}$  (ancho entre ruedas) y  $L = 165\text{ mm}$  (distancia entre ejes).
 
 Esta configuración hace que la rueda interior ($\theta_{\text{int}}$) gire en un ángulo mayor que la exterior ($\theta_{\text{ext}}$), haciendo que ambas sigan el trazado natural de la curva sin derrapar.
 
@@ -549,7 +549,7 @@ if (abs(anguloZ_acumulado) >= ANGULO_OBJETIVO) { // ANGULO_OBJETIVO = 72.0°
 
 #### Controlador PD con Zona Muerta (Zona Azul)
 
-En el modo `RECTA`, el vehículo se mantiene centrado entre ambas paredes midiendo la diferencia de centrado $e(t)$:
+En el modo `RECTA`, el vehículo se mantiene centrado entre ambas paredes midiendo la diferencia de centrado  $e(t)$:
 
 $$e(t) = \frac{\text{distDer} - \text{distIzq}}{2}$$
 
@@ -574,7 +574,7 @@ $$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t-\Delta t)}{\Delta t}$$
 
 * **Ganancia Proporcional ($K_p = 10.33$):** Responde a la magnitud del descentrado del vehículo.
 * **Ganancia Derivativa ($K_d = 14.0$):** Frena el balanceo lateral prediciendo la velocidad con la que el auto se acerca al muro.
-* **Límite Estricto de Giro:** La salida $u(t)$ está acotada a ±15° alrededor del punto medio del servomotor (92°), restringiendo el ángulo físico de la dirección a la ventana comprendida entre 57° y 127°.
+* **Límite Estricto de Giro:** La salida  $u(t)$  está acotada a ±15° alrededor del punto medio del servomotor (92°), restringiendo el ángulo físico de la dirección a la ventana comprendida entre 57° y 127°.
 
 ---
 
