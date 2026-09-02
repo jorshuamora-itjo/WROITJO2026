@@ -523,13 +523,246 @@ float filtrarLectura(float lecturaCruda, float lecturaAnterior) {
 }
 ```
 
+### MPU6050 Gyroscope Inertial Integration
+
+Unlike previous versions, turns in the current version do not rely on bouncing waves off non-existent walls. We calculate rotation by continuously integrating the angular velocity ($\omega_z$) measured by the MPU6050 motion sensor over the I2C connection (address `0x68`):
+
+**Rotation Angle Calculation:**
+$$\theta_z = \sum \left( \frac{\text{giroZ}}{131.0} \right) \cdot \Delta t$$
+
+Where the value 131.0 LSB/(°/s) corresponds to the sensitivity scale of ±250°/s configured on the MPU6050 sensor.
+
+```cpp
+// In the loop inside CURVA state
+float giroZ = (leerGiroscopioZ() - offsetZ) / 131.0; 
+anguloZ_acumulado += (giroZ * dt);
+
+if (abs(anguloZ_acumulado) >= ANGULO_OBJETIVO) { // ANGULO_OBJETIVO = 72.0°
+  estadoActual = COOLDOWN;
+  tiempoInicioCooldown = millis();
+}
+```
+
+### Finite State Machine and Track Logic
+
+* **Track Direction Memory (`sentidoPista`):** During the first turn of the run (`sentidoPista == 0`), the vehicle analyzes which side offers a larger opening and permanently records the circuit direction. Once assigned, the remaining 11 corners of the run read directly from `sentidoPista`, ignoring erroneous readings caused by acoustic reflections.
+
+#### PD Controller with Deadband (Blue Zone)
+
+In `RECTA` mode, the vehicle stays centered between both walls by measuring the centering difference $e(t)$:
+
+$$e(t) = \frac{\text{distRight} - \text{distLeft}}{2}$$
+
+**Blue Zone Filter (±5 cm):**
+To prevent unnecessary corrections caused by wall imperfections or textures on the track, a deadband of ±5 cm is applied:
+
+```cpp
+const float ZONA_AZUL = 5.0; 
+float error = 0; 
+
+if (abs(distancia_al_centro) <= ZONA_AZUL) {
+  error = 0; 
+}
+else {
+  if (distancia_al_centro > 0) error = distancia_al_centro - ZONA_AZUL; 
+  else error = distancia_al_centro + ZONA_AZUL;
+}
+```
+
+**Proportional-Derivative Equation:**
+$$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t-\Delta t)}{\Delta t}$$
+
+* **Proportional Gain ($K_p = 10.33$):** Responds to the magnitude of the vehicle's off-center offset.
+* **Derivative Gain ($K_d = 14.0$):** Dampens lateral oscillation by predicting the velocity at which the car approaches the wall.
+* **Strict Steering Limit:** The output $u(t)$ is bounded to ±15° around the steering servo's neutral point (92°), restricting the physical steering angle to a window between 57° and 127°.
+
+---
+
+### Code Maintainability and Track Parameter Guide
+
+To streamline the calibration process in the pit area, key dynamic parameters are centralized on lines 22 through 35 of `src/current/nano_master.cpp`:
+
+```cpp
+// CRITICAL PARAMETERS TO CALIBRATE ON TRACK
+const float DIST_DETECCION_FRONT = 75.0; // Distance (cm) to initiate turn
+const float ANGULO_OBJETIVO = 72.0;       // Real MPU6050 degrees to complete corner
+const unsigned long TIEMPO_COOLDOWN = 1200;// Immunity window after exiting corner (ms)
+
+// CONTROL CONSTANTS
+float Kp = 10.33;  // Proportional Gain for centering
+float Kd = 14.0;   // Derivative Gain for centering
+```
+
+---
+
+## Deployment and Track Operation Guide
+
+In a fast-paced competition environment like WRO, reaction speed in the pit area is as decisive as the code running on the car. A last-minute tweak or battery swap must not turn into a mess of tangled cables or compilation errors due to missing dependencies.
+
+This field guide allows any team member or evaluator to quickly, safely, and repeatably compile, test, and deploy the software for Meteoro (v2.0).
+
+---
+
+### 1. Pre-Compilation Prerequisites
+
+Before plugging USB cables into the pit computer, ensure the development environment contains the exact tools and libraries used during our performance testing.
+
+**Development Environment (IDE)**
+* **Arduino IDE 2.x (Primary Environment):** We recommend Arduino IDE version 2.0 or higher for its integrated serial monitor, real-time code completion, and live variable inspection.
+* **PlatformIO (VS Code):** For team members who prefer working from the command line or using advanced version control with Git, the project includes a fully prepared PlatformIO configuration.
+
+**Required Libraries and Dependency Management**
+Make sure to install the following libraries via the Arduino IDE Library Manager (`Ctrl + Shift + I` / `Cmd + Shift + I`) before compiling the code:
+* **`Servo.h` (Native Library):** Drives PWM signal output (at 50 Hz) to control the Ackermann steering servo motor on the Slave board.
+* **`Wire.h` (Native Library):** Enables real-time communication at 100 kHz over the I2C bus between the Master microcontroller (Address `0x00`) and the Slave (Address `0x08`).
+* **`Pixy2.h` (By Charmed Labs):** Handles configuration and SPI data transfers for the PixyCam2 vision sensor, responsible for visual signal recognition on the track.
+* **`NewPing.h` (By Tim Eckel):** Optimizes distance measurements from the three RCWL-1601 ultrasonic sensors, eliminating blocking delays caused by standard `pulseIn()` calls.
+
+---
+
+### 2. Firmware Flashing Steps (Pit Workflow)
+
+Because the vehicle uses a dual microcontroller architecture, firmware must be uploaded independently to each Arduino Nano board.
+
+**Step 1: Flashing the Arduino Nano Master**
+1. Connect the Arduino Nano Master board to the computer using the primary Mini-USB cable.
+2. Open the development environment and load the project file: `src/current/first_challenge/master_nano.ino`
+3. In the IDE **Tools** menu, configure the following settings:
+   * **Board:** Arduino Nano
+   * **Processor:** ATmega328P (If uploading fails, switch to *ATmega328P (Old Bootloader)*)
+   * **Port:** Select the assigned serial port (e.g., `COM3` on Windows or `/dev/ttyUSB0` on Linux/macOS).
+4. Click **Upload** (`Ctrl + U`).
+5. Open the Serial Monitor at 115200 baud to confirm that the MPU6050 orientation sensor completes its initial Z-axis calibration.
+
+**Step 2: Flashing the Arduino Nano Slave**
+1. Disconnect the Mini-USB cable from the Master board and connect it to the Arduino Nano Slave (actuator node).
+2. Open the project file: `src/current/first_challenge/slave_nano.ino`
+3. Verify that the selected board remains Arduino Nano with the correct processor setting.
+4. Click **Upload** (`Ctrl + U`).
+5. Once flashing completes, reconnect the internal power cables.
+
+> **Safety Note:** Temporarily disconnect the main 3S power battery pack while flashing firmware over USB to prevent accidental motor startup on the workbench.
+
+---
+
+### 3. Pre-Track Protocol (Pit Stop Checklist)
+
+To ensure operational stability during official competition runs, the team strictly follows the protocol detailed in the repository file: `pit_stop_checklist.md`.
+
+Key checklist items to review at the pit table before moving Meteoro (v2.0) to the starting area:
+* **3S Battery Voltage:** Multimeter reading  $\ge 11.8\text{ V DC}$.
+* **Servo Mechanical Adjustment:** Verify centered steering at 90°.
+* **Transducer Cleaning:** Wipe dust off the ultrasonic sensors.
+* **I2C Bus Test:** Ensure SDA/SCL wiring connections are secure.
+* **IMU Calibration:** Place the car on a flat surface before powering on (wait 5 seconds).
+
+---
+
+### 4. Race Run Routine
+
+1. **Positioning:** Place Meteoro (v2.0) inside the 30 cm × 20 cm starting box, aligned parallel to the outer wall.
+2. **Logic and Power Activation:** Switch on the main 3S power switch.
+3. **Calibration Wait:** Observe the status LED on the Master board until the gyroscope completes its inertial reference calibration.
+4. **Launch:** Press the start button. The car executes the `arrancarSuave()` function on the Slave board and begins its autonomous run.
+
+---
+
+### 5. Quick Troubleshooting Guide
+
+| Track Symptom | Probable Cause | Immediate Pit Solution |
+| :--- | :--- | :--- |
+| **Car does not turn at the first corner** | MPU6050 gyroscope reading failure or frozen I2C bus. | Check SDA/SCL cables and restart the car while keeping it stationary. |
+| **Unstable turn / Weaving on straightaways** | Proportional Gain $K_p$ too high or sensor noise. | Adjust $K_p = 10.33$ to $8.5$ in the parameter section of `master_nano.ino`. |
+| **Servo motor chatters or loses torque** | Voltage drop on Channel 2 Buck Regulator. | Charge or replace the 3S battery pack. |
+| **"Board not found" error during flash** | Incorrect COM port or missing USB chip driver (CH340). | Switch processor setting in the IDE to *ATmega328P (Old Bootloader)*. |
+
+---
+
+## Engineering Logbook and Solved Challenges
+
+During the testing phases of our vehicle Meteoro, the team identified and resolved several technical issues that compromised the stability and precision of the autonomous system. Below, we present the detailed history of the challenges faced and the engineering solutions applied.
+
+---
+
+### Technical Challenges and Implemented Solutions
+
+#### 1. Resets Caused by Sudden Voltage Drops (Brownout)
+* **Diagnosis:** When starting the main electric motor, consumption peaks were generated that caused the circuit voltage to drop below 4.5 V. This sudden drop caused unexpected resets of the ATmega328P microcontroller.
+* **Solution:** We incorporated a dedicated DSN-MINI-360 Buck voltage regulator to supply a constant, clean 5.0 V exclusively to the entire logic section of the circuit.
+
+#### 2. Interference Between Ultrasonic Sensors (Cross-Talk)
+* **Diagnosis:** When emitting `TRIG` pin signals simultaneously across multiple RCWL-1601 sensors, the sound waves bounced back at the same time and interfered with each other, causing a sensor to falsely record the echo sent by a neighboring sensor.
+* **Solution:** We established a turn-by-turn measurement schedule, leaving a 15 ms delay between triggers for each sensor. Additionally, we filtered data by taking the median of groups of 4 readings to discard outliers.
+
+#### 3. Steering Adjustment Lockup Due to Error Accumulation (Integral Windup)
+* **Diagnosis:** During prolonged turns, the accumulated sum of small deviations locked the `suma_errores` variable at its maximum value. This caused the front wheels to get stuck at an angle when attempting to return to a straight line.
+* **Solution:** We set a maximum cap (`LIMITE_INTEGRAL = 1000.0`) to prevent the value from growing excessively and added an instruction to reset the `suma_errores` variable to zero right after completing each turn.
+
+#### 4. Loss of Synchronization in Serial Messages (UART)
+* **Diagnosis:** In initial testing, data transmitted between the Master and Slave Arduinos lost the byte arrival sequence, resulting in uncoordinated and unstable movements in the motors and steering.
+* **Solution:** We structured a clear message format by assigning a start symbol (`<`), the primary command, and an end symbol (`>`), verifying data validity using a checksum.
+
+---
+
+## Bill of Materials
+
+The selection of components for the Meteoro (v2.0) autonomous vehicle was based on guaranteeing electrical stability, low weight, and rapid response during the run. The following table presents the electronic and mechanical elements used in the prototype, indicating the quantity used, their function within the distributed system, and the link to their datasheet stored in the local folder `docs/datasheets/`.
+
+---
+
+### General Table of Components and Datasheets
+
+| Component | Quantity | Technical Function in Meteoro (v2.0) | Datasheet |
+| :--- | :---: | :--- | :---: |
+| **Arduino Nano (ATmega328P)** | 2 | **Distributed Processing:**<br>• *Master:* Responsible for reading sensors (RCWL-1601, MPU-6050, PixyCam2) and calculating path corrections (PD control).<br>• *Slave:* Generates electrical PWM signals to control the main motor and steering servo motor. | [Datasheet](docs/datasheets/arduino_nano.pdf) |
+| **DSN-MINI-360 Buck Regulator** | 2 | **Isolated Power Regulation:**<br>• *Channel 1:* Steps down main voltage from 11.1 V - 12.6 V to a stable ~5.0 V for logic and sensors.<br>• *Channel 2:* Supplies an independent 5.0 V to the servo motor to prevent sudden power drops to the microcontrollers. | [Datasheet](docs/datasheets/dsn_mini_360.pdf) |
+| **L298N H-Bridge** | 1 | **Power Module for Drive:**<br>Amplifies current and allows changing the rotation direction of the main 11.1 V DC motor. | [Datasheet](docs/datasheets/l298n.pdf) |
+| **MPU-6050 Gyroscope / Accelerometer** | 1 | **Inertial Navigation:**<br>Measures vertical-axis yaw rate ($\omega_z$) via the I2C bus to software-calculate precise actual 72° turns. | [Datasheet](docs/datasheets/mpu6050.pdf) |
+| **RCWL-1601 Ultrasonic Sensor** | 3 | **Environment Reading:**<br>Measures wall distance (Left, Front, and Right) by firing sound bursts at 5.0 V. | [Datasheet](docs/datasheets/rcwl_1601.pdf) |
+| **AD002 Servo Motor** | 1 | **Steering Control:**<br>Metal-geared servo configured to adjust front wheels according to the Ackermann steering system. | [Datasheet](docs/datasheets/ad002_servo.pdf) |
+| **Yellow TT DC Motor** | 1 | **Rear Wheel Drive:**<br>DC motor connected to transmission with 90° bevel gears (1:1.5 speed ratio). | [Datasheet](docs/datasheets/motor_tt.pdf) |
+| **3S Li-ion Lithium Batteries** | 3 | **Primary Power Source:**<br>Set of 3 lithium cells in series (11.1 V nominal / 12.6 V fully charged) to power both motors and regulators. | [Datasheet](docs/datasheets/battery_3s.pdf) |
+
+---
+
+### Notes on Organization and Technical Files
+
+The files linked in the **Datasheet** column are part of the static project documentation and are stored in the folder: `docs/datasheets/`.
+
 ---
 
 ## Modules and Direct Links
 
 * **Prototype Firmware:** [`src/`](src/)
-* **Pinout Connections Table:** [`schematics/`](schematics/)
+* **Pinout Table:** [`schematics/`](schematics/)
 * **Pit Checklist:** [`docs/`](docs/)
+
+---
+
+## Photographic and Multimedia Registry
+
+### Vehicle Views (WRO Mandatory)
+
+The 5 mandatory photographs are available in the `photos/vehicle/` folder:
+
+* **Front View:** `photos/vehicle/front_view.jpg`
+* **Rear View:** `photos/vehicle/rear_view.jpg`
+* **Left Side View:** `photos/vehicle/left_view.jpg`
+* **Right Side View:** `photos/vehicle/right_view.jpg`
+* **Top View:** `photos/vehicle/top_view.jpg`
+
+---
+
+### Video Demonstration (YouTube)
+
+* **Open Challenge Video:** [Open Challenge Run](https://www.youtube.com)
+* **Obstacle Challenge Video:** [Obstacle Challenge Run](https://www.youtube.com)
+
+---
+
+## License
+
+This project is distributed under the **MIT** license. See the `LICENSE` file for more details.
 
 ---
 
