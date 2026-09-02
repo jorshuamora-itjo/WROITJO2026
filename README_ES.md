@@ -278,7 +278,7 @@ Tomando como referencia la distribución de sensores del equipo **GammaVersion**
 ---
 
 #### 2. Geometría de Dirección Ackermann
-Reemplazamos el pivote simple por un sistema de dirección geométrica tipo Ackermann movido por un servomotor **MG90S** con engranajes metálicos, conectado mediante una guía ranurada con pasador (mecanismo de Yugo Escocés).
+Reemplazamos el pivote simple por un sistema de dirección geométrica tipo Ackermann movido por un servomotor **AD002** con engranajes metálicos, conectado mediante una guía ranurada con pasador (mecanismo de Yugo Escocés).
 
 $$\cot(\theta_{\text{ext}}) - \cot(\theta_{\text{int}}) = \frac{w}{L}$$
 
@@ -360,7 +360,7 @@ Para consultar los esquemas gráficos completos e ilustrados, puedes revisar la 
 
 | Módulo / Componente | Pin del Componente | Pin Arduino Nano | Tipo de Señal | Nivel Lógico | Función en el Sistema |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Servo de Dirección** | Signal (PWM) | D2 | PWM Salida | 5.0 V | Ajuste de ángulo para dirección Ackermann |
+| **Servo de Dirección AD002** | Signal (PWM) | D2 | PWM Salida | 5.0 V | Ajuste de ángulo para dirección Ackermann |
 | **Driver L298N (Motor DC)** | IN1 / A1 | D5 | PWM Salida | 5.0 V | Control de velocidad para la tracción |
 | | IN2 / A2 | D6 | Salida Digital | 5.0 V | Sentido de marcha (LOW para avanzar) |
 | **Interconexión I2C (Maestro)** | SDA | A4 | I2C Data | 5.0 V | Recepción de comandos desde el Maestro |
@@ -379,7 +379,7 @@ Para eliminar por completo las caídas de voltaje que reiniciaban el sistema, di
 | :--- | :--- | :--- | :--- |
 | **Baterías de Litio (3S)** | Paquete 3 × 3.7 V | 11.1 V - 12.6 V Directo | Entrada de energía para el motor principal (Driver L298N) |
 | **Regulador Buck 1 (Canal 1)** | Paquete de Litio 3S | 5.0 V DC Regulado | Arduino Nano Maestro, Giroscopio MPU6050, 3 Sensores Ultrasónicos y PixyCam2 |
-| **Regulador Buck 2 (Canal 2)** | Paquete de Litio 3S | 5.0 V DC Regulado | Arduino Nano Esclavo y Servomotor MG90S |
+| **Regulador Buck 2 (Canal 2)** | Paquete de Litio 3S | 5.0 V DC Regulado | Arduino Nano Esclavo y Servomotor AD00S |
 | **Masa Común (GND)** | N/A | 0 V | Unión de cables de tierra para todas las placas y sensores |
 
 ---
@@ -595,11 +595,174 @@ float Kd = 14.0;   // Ganancia Derivativa de centrado
 
 ---
 
+## Guía de Despliegue y Operación en Pista
+
+En un entorno de competencia tan dinámico como la WRO, la rapidez de reacción en el área de pits (foso de trabajo) es tan determinante como las líneas de código cargadas en el auto. Un ajuste de último momento o el cambio de baterías no debe convertirse en un enredo de cables desordenados ni en fallas de compilación por falta de componentes en el programa.
+
+Esta guía práctica de campo funciona para cualquier integrante del equipo o evaluador que necesite compilar, comprobar y poner en marcha el software de Meteoro (v2.0) de forma rápida, segura y repetible.
+
+---
+
+### 1. Requisitos Previos a la Compilación
+
+Antes de conectar los cables USB a la computadora en pits, es indispensable verificar que el entorno de desarrollo cuente con las herramientas y librerías exactas empleadas durante nuestras pruebas de rendimiento.
+
+**Entorno de Desarrollo (IDE)**
+* **Arduino IDE 2.x (Entorno Principal):** Recomendamos utilizar la versión 2.0 o superior del entorno de Arduino por su monitor de puertos serie integrado, sugerencias de código en tiempo real e inspección instantánea de variables.
+* **PlatformIO (VS Code):** Para quienes prefieren trabajar desde la consola de comandos o con un control de versiones avanzado mediante Git, el proyecto incluye la estructura base totalmente lista para PlatformIO.
+
+**Librerías Necesarias y Gestor de Dependencias**
+Asegúrate de instalar las siguientes librerías desde el Gestor de Librerías de Arduino IDE (`Ctrl + Shift + I` / `Cmd + Shift + I`) antes de compilar el código:
+* **`Servo.h` (Librería Nativa):** Controla las señales de movimiento (a 50 Hz) para orientar el servomotor de dirección tipo Ackermann en la placa esclava.
+* **`Wire.h` (Librería Nativa):** Facilita la comunicación en tiempo real a 100 kHz a través del canal I2C entre el microcontrolador Maestro (Dirección `0x00`) y el Esclavo (Dirección `0x08`).
+* **`Pixy2.h` (Por Charmed Labs):** Necesaria para la configuración y transferencia de datos por bus SPI con la cámara PixyCam2, encargada del reconocimiento visual de señales en la pista.
+* **`NewPing.h` (Por Tim Eckel):** Optimiza las lecturas de los tres sensores de distancia ultrasónicos RCWL-1601, eliminando las pausas de tiempo molestas causadas por la función tradicional `pulseIn()`.
+
+---
+
+### 2. Pasos de Carga de Firmware (Flujo en Boxes)
+
+Debido a que el vehículo utiliza una arquitectura de dos microcontroladores interconectados, el programa debe grabarse de forma independiente en cada tarjeta Arduino Nano.
+
+**Paso 1: Carga en el Arduino Nano Maestro**
+1. Conecta la tarjeta Arduino Nano Maestro a la computadora mediante el cable Mini-USB principal.
+2. Abre el entorno de desarrollo y abre el archivo del proyecto correspondiente: `src/current/first_challenge/master_nano.ino`
+3. En el menú de herramientas del IDE, configura los siguientes parámetros:
+   * **Placa:** Arduino Nano
+   * **Procesador:** ATmega328P (Si la grabación presenta error, cambia a *ATmega328P (Old Bootloader)*)
+   * **Puerto:** Selecciona el puerto serie asignado (por ejemplo, `COM3` en Windows o `/dev/ttyUSB0` en Linux/macOS).
+4. Presiona el botón **Subir** (`Ctrl + U`).
+5. Abre el Monitor Serie a 115200 baudios para confirmar que el sensor de orientación MPU6050 complete correctamente su calibración inicial en el eje Z.
+
+**Paso 2: Carga en el Arduino Nano Esclavo**
+1. Desconecta el cable Mini-USB de la tarjeta Maestra y conéctalo al Arduino Nano Esclavo (nodo de actuadores).
+2. Abre el archivo de proyecto correspondiente: `src/current/first_challenge/slave_nano.ino`
+3. Confirma que la placa seleccionada siga siendo Arduino Nano con el procesador correspondiente.
+4. Presiona el botón **Subir** (`Ctrl + U`).
+5. Tras finalizar la grabación del programa, vuelve a conectar los cables de energía interna del auto.
+
+> **Nota de Seguridad:** Desconecta temporalmente la alimentación del paquete de baterías 3S de fuerza mientras realizas la carga del firmware por USB para evitar encendidos accidentales de los motores sobre la mesa de trabajo.
+
+---
+
+### 3. Protocolo Pre-Pista (Pit Stop Checklist)
+
+Para asegurar la estabilidad operativa del prototipo en los intentos oficiales de la competencia, el equipo sigue rigurosamente el protocolo detallado en el archivo del repositorio: `pit_stop_checklist.md`.
+
+Puntos clave a revisar en la mesa de pits antes de trasladar a Meteoro (v2.0) al área de salida:
+* **Tensión de Batería 3S:** Medición con multímetro ≥ 11.8 V DC.
+* **Ajuste Mecánico Servo:** Verificar dirección centrada a 90°.
+* **Limpieza de Transductores:** Limpiar el polvo en los sensores de ultrasonido.
+* **Test de Bus I2C:** Verificar que los cables SDA/SCL estén firmes.
+* **Calibración IMU:** Colocar el auto plano al encender (esperar 5 segundos).
+
+---
+
+### 4. Rutina de Ejecución en Carrera
+
+1. **Posicionamiento:** Colocar a Meteoro (v2.0) dentro del área de salida de 30 cm × 20 cm alineado paralelo a la pared exterior.
+2. **Encendido Lógico y de Potencia:** Activar el interruptor general de alimentación 3S.
+3. **Espera de Calibración:** Observar el LED de estado en la placa Maestra hasta que finalice el conteo de referencia inercial del giroscopio.
+4. **Lanzamiento:** Presionar el botón de inicio. El auto ejecutará la función `arrancarSuave()` en el esclavo y comenzará el recorrido autónomo de la primera ronda.
+
+---
+
+### 5. Guía Rápida de Solución de Problemas (Troubleshooting)
+
+| Síntoma en Pista | Causa Probable | Solución Inmediata en Pits |
+| :--- | :--- | :--- |
+| **El auto no gira en la primera esquina** | Fallo en la lectura del giroscopio MPU6050 o bus I2C colgado. | Verificar cables SDA/SCL y reiniciar el auto manteniéndolo inmóvil. |
+| **Giro inestable / Serpenteo en rectas** | Ganancia Proporcional $K_p$ muy alta o interferencia en sensores. | Ajustar $K_p = 10.33$ a $8.5$ en la sección de parámetros de `master_nano.ino`. |
+| **El servomotor tiembla o pierde fuerza** | Caída de voltaje en el Regulador Buck Canal 2. | Cargar o sustituir el paquete de baterías 3S. |
+| **Error "Board not found" al cargar** | Puerto COM incorrecto o driver de chip USB (CH340) ausente. | Cambiar el procesador en el IDE a *ATmega328P (Old Bootloader)*. |
+
+---
+
+## Bitácora de Ingeniería y Desafíos Resueltos
+
+Durante las etapas de prueba de nuestro vehículo Meteoro, el equipo detectó y resolvió diversos problemas técnicos que comprometían la estabilidad y la precisión del sistema autónomo. A continuación, presentamos el historial detallado de los retos enfrentados y las soluciones de ingeniería aplicadas.
+
+---
+
+### Desafíos Técnicos y Soluciones Implementadas
+
+#### 1. Reinicio por Caídas Repentinas de Voltaje (Brownout)
+* **Diagnóstico:** Al poner en marcha el motor eléctrico principal, se generaban picos de consumo que provocaban que el voltaje del circuito cayera por debajo de los 4.5 V. Esta baja repentina provocaba el reinicio inesperado del microcontrolador ATmega328P.
+* **Solución:** Incorporamos un regulador de voltaje Buck DSN-MINI-360 dedicado de forma exclusiva a suministrar unos 5.0 V constantes y limpios a toda la parte lógica del circuito.
+
+#### 2. Interferencias entre Sensores Ultrasónicos (Ecos Cruzados)
+* **Diagnóstico:** Al emitir las señales del pin `TRIG` de forma simultánea en varios sensores RCWL-1601, las ondas de sonido rebotaban al mismo tiempo e interferían entre sí, haciendo que un sensor registrara por error el eco enviado por el sensor vecino.
+* **Solución:** Establecimos un calendario de mediciones turno a turno, dejando una pausa de 15 ms entre el disparo de cada sensor. Además, filtramos la información tomando la mediana de grupos de 4 lecturas para desechar cualquier dato fuera de lo normal.
+
+#### 3. Bloqueo del Ajuste de Dirección por Acumulación de Error (Windup)
+* **Diagnóstico:** Durante giros prolongados, la suma acumulada de las pequeñas desviaciones fijaba la variable `suma_errores` en su valor máximo. Esto provocaba que las ruedas delanteras se quedaran atascadas en ángulo inclinado al intentar volver a la línea recta.
+* **Solución:** Definimos un tope máximo (`LIMITE_INTEGRAL = 1000.0`) para evitar que el valor creciera de forma desmedida y agregamos una instrucción para reiniciar la variable `suma_errores` a cero justo al terminar cada curva.
+
+#### 4. Pérdida de Sincronía en Mensajes Seriales (UART)
+* **Diagnóstico:** En las primeras pruebas, los datos enviados entre el Arduino Maestro y el Esclavo perdían el orden de llegada de los bytes, lo que resultaba en movimientos descoordinados e inestables en los motores y la dirección.
+* **Solución:** Estructuramos un formato claro de mensaje asignando un símbolo de inicio (`<`), la orden principal y un símbolo de cierre (`>`), verificando la validez de los datos mediante una suma de comprobación (*checksum*).
+
+---
+
+## Lista de Materiales
+
+La elección de los componentes para el vehículo autónomo Meteoro (v2.0) se basó en garantizar estabilidad eléctrica, ligereza y una respuesta rápida durante el recorrido. En la siguiente tabla se presentan los elementos electrónicos y mecánicos utilizados en el prototipo, indicando la cantidad empleada, su función dentro del sistema distribuido y el enlace a su ficha técnica (*datasheet*) guardada en la carpeta local `docs/datasheets/`.
+
+---
+
+### Tabla General de Componentes y Fichas Técnicas
+
+| Componente | Cantidad | Función Técnica en Meteoro (v2.0) | Ficha Técnica (Datasheet) |
+| :--- | :---: | :--- | :---: |
+| **Arduino Nano (ATmega328P)** | 2 | **Procesamiento Distribuido:**<br>• *Maestro:* Encargado de leer los sensores (RCWL-1601, MPU-6050, PixyCam2) y calcular las correcciones de ruta (control PD).<br>• *Esclavo:* Genera las señales eléctricas (PWM) para controlar el motor principal y el servomotor de dirección. | [Ficha Técnica](docs/datasheets/arduino_nano.pdf) |
+| **Regulador Buck DSN-MINI-360** | 2 | **Regulación Aislada de Potencia:**<br>• *Canal 1:* Reduce el voltaje principal de 11.1 V - 12.6 V a unos 5.0 V estables para la lógica y los sensores.<br>• *Canal 2:* Suministra 5.0 V independientes al servomotor para evitar bajas repentinas de energía en los microcontroladores. | [Ficha Técnica](docs/datasheets/dsn_mini_360.pdf) |
+| **Puente H L298N** | 1 | **Módulo de Potencia para Tracción:**<br>Amplifica la corriente y permite cambiar el sentido de giro del motor DC principal alimentado a 11.1 V. | [Ficha Técnica](docs/datasheets/l298n.pdf) |
+| **Giroscopio / Acelerómetro MPU-6050** | 1 | **Navegación Inercial:**<br>Mide la velocidad de giro en el eje vertical ($\omega_z$) mediante el bus I2C para calcular por software giros precisos de 72° reales. | [Ficha Técnica](docs/datasheets/mpu6050.pdf) |
+| **Sensor Ultrasónico RCWL-1601** | 3 | **Lectura del Entorno:**<br>Mide la distancia a las paredes (Izquierda, Frente y Derecha) enviando ráfagas de sonido a 5.0 V. | [Ficha Técnica](docs/datasheets/rcwl_1601.pdf) |
+| **Servomotor AD002** | 1 | **Control de Dirección:**<br>Servomotor con engranajes metálicos configurado para ajustar las ruedas delanteras según el sistema de dirección Ackermann. | [Ficha Técnica](docs/datasheets/ad002_servo.pdf) |
+| **Motor DC TT (Amarillo)** | 1 | **Tracción Trasera:**<br>Motor de corriente continua conectado a la transmisión con engranajes cónicos a 90° (relación de velocidad 1:1.5). | [Ficha Técnica](docs/datasheets/motor_tt.pdf) |
+| **Baterías de Litio Li-ion 3S** | 3 | **Fuente de Energía Principal:**<br>Conjunto de 3 celdas de litio en serie (11.1 V nominales / 12.6 V con carga completa) para abastecer tanto a los motores como a los reguladores. | [Ficha Técnica](docs/datasheets/battery_3s.pdf) |
+
+---
+
+### Notas sobre Organización y Archivos Técnicos
+
+Los archivos enlazados en la columna de **Ficha Técnica** forman parte de la documentación estática del proyecto y se encuentran almacenados dentro de la carpeta: `docs/datasheets/`.
+
+---
+
 ## Módulos y Enlaces Directos
 
 * **Firmware del Prototipo:** [`src/`](src/)
 * **Tabla de Conexiones (Pinout):** [`schematics/`](schematics/)
 * **Lista de Verificación de Foso:** [`docs/`](docs/)
+
+---
+
+## Registro Fotográfico y Multimedia
+
+### Vistas del Vehículo (Obligatorias WRO)
+
+Las 5 fotografías reglamentarias se encuentran disponibles en la carpeta `photos/vehicle/`:
+
+* **Vista Frontal:** `photos/vehicle/front_view.jpg`
+* **Vista Trasera:** `photos/vehicle/rear_view.jpg`
+* **Vista Lateral Izquierda:** `photos/vehicle/left_view.jpg`
+* **Vista Lateral Derecha:** `photos/vehicle/right_view.jpg`
+* **Vista Superior:** `photos/vehicle/top_view.jpg`
+
+---
+
+### Demostración en Video (YouTube)
+
+* **Open Challenge Video:** [Recorrido Open Challenge](https://www.youtube.com)
+* **Obstacle Challenge Video:** [Recorrido Obstacle Challenge](https://www.youtube.com)
+
+---
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia **MIT**. Consulta el archivo `LICENSE` para más detalles.
 
 ---
 
