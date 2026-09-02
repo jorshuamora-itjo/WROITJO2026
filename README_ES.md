@@ -743,20 +743,20 @@ Los archivos enlazados en la columna de **Ficha Técnica** forman parte de la do
 
 ### Vistas del Vehículo (Obligatorias WRO)
 
-Las 5 fotografías reglamentarias se encuentran disponibles en la carpeta `photos/vehicle/`:
+Las 5 fotografías reglamentarias se encuentran disponibles en la carpeta [`photos/vehicle/`](photos/vehicle/):
 
 * **Vista Frontal:** `photos/vehicle/front_view.jpg`
 * **Vista Trasera:** `photos/vehicle/rear_view.jpg`
 * **Vista Lateral Izquierda:** `photos/vehicle/left_view.jpg`
 * **Vista Lateral Derecha:** `photos/vehicle/right_view.jpg`
 * **Vista Superior:** `photos/vehicle/top_view.jpg`
+* **Vista Inferior:** `photos/vehicle/bottom_view.jpg`
 
 ---
 
 ### Demostración en Video (YouTube)
 
-* **Open Challenge Video:** [Recorrido Open Challenge](https://www.youtube.com)
-* **Obstacle Challenge Video:** [Recorrido Obstacle Challenge](https://www.youtube.com)
+* **Open Challenge Video:** [Recorrido Open Challenge](https://youtu.be/mJ1lY1bOVQc)
 
 ---
 
