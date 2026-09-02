@@ -647,7 +647,7 @@ Debido a que el vehículo utiliza una arquitectura de dos microcontroladores int
 
 ### 3. Protocolo Pre-Pista (Pit Stop Checklist)
 
-Para asegurar la estabilidad operativa del prototipo en los intentos oficiales de la competencia, el equipo sigue rigurosamente el protocolo detallado en el archivo del repositorio: `pit_stop_checklist.md`.
+Para asegurar la estabilidad operativa del prototipo en los intentos oficiales de la competencia, el equipo sigue rigurosamente el protocolo detallado en el archivo del repositorio: [`pit_stop_checklist.md`](docs/pit_stop_checklist.md).
 
 Puntos clave a revisar en la mesa de pits antes de trasladar a Meteoro (v2.0) al área de salida:
 * **Tensión de Batería 3S:** Medición con multímetro ≥ 11.8 V DC.
