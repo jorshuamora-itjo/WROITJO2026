@@ -647,7 +647,7 @@ Because the vehicle uses a dual microcontroller architecture, firmware must be u
 
 ### 3. Pre-Track Protocol (Pit Stop Checklist)
 
-To ensure operational stability during official competition runs, the team strictly follows the protocol detailed in the repository file: `pit_stop_checklist.md`.
+To ensure operational stability during official competition runs, the team strictly follows the protocol detailed in the repository file: [`pit_stop_checklist.md`](pit_stop_checklist.md).
 
 Key checklist items to review at the pit table before moving Meteoro (v2.0) to the starting area:
 * **3S Battery Voltage:** Multimeter reading  $\ge 11.8\text{ V DC}$.
