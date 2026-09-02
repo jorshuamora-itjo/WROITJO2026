@@ -750,13 +750,13 @@ The 5 mandatory photographs are available in the `photos/vehicle/` folder:
 * **Left Side View:** `photos/vehicle/left_view.jpg`
 * **Right Side View:** `photos/vehicle/right_view.jpg`
 * **Top View:** `photos/vehicle/top_view.jpg`
+* **Bottom View** `photos/vehicle/bottom_view.jpg`
 
 ---
 
 ### Video Demonstration (YouTube)
 
-* **Open Challenge Video:** [Open Challenge Run](https://www.youtube.com)
-* **Obstacle Challenge Video:** [Obstacle Challenge Run](https://www.youtube.com)
+* **Open Challenge Video:** [Open Challenge Course](https://youtu.be/mJ1lY1bOVQc)
 
 ---
 
