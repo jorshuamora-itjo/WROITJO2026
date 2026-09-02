@@ -714,20 +714,20 @@ La elección de los componentes para el vehículo autónomo Meteoro (v2.0) se ba
 
 | Componente | Cantidad | Función Técnica en Meteoro (v2.0) | Ficha Técnica (Datasheet) |
 | :--- | :---: | :--- | :---: |
-| **Arduino Nano (ATmega328P)** | 2 | **Procesamiento Distribuido:**<br>• *Maestro:* Encargado de leer los sensores (RCWL-1601, MPU-6050, PixyCam2) y calcular las correcciones de ruta (control PD).<br>• *Esclavo:* Genera las señales eléctricas (PWM) para controlar el motor principal y el servomotor de dirección. | [Ficha Técnica](docs/datasheets/arduino_nano.pdf) |
-| **Regulador Buck DSN-MINI-360** | 2 | **Regulación Aislada de Potencia:**<br>• *Canal 1:* Reduce el voltaje principal de 11.1 V - 12.6 V a unos 5.0 V estables para la lógica y los sensores.<br>• *Canal 2:* Suministra 5.0 V independientes al servomotor para evitar bajas repentinas de energía en los microcontroladores. | [Ficha Técnica](docs/datasheets/dsn_mini_360.pdf) |
-| **Puente H L298N** | 1 | **Módulo de Potencia para Tracción:**<br>Amplifica la corriente y permite cambiar el sentido de giro del motor DC principal alimentado a 11.1 V. | [Ficha Técnica](docs/datasheets/l298n.pdf) |
-| **Giroscopio / Acelerómetro MPU-6050** | 1 | **Navegación Inercial:**<br>Mide la velocidad de giro en el eje vertical ($\omega_z$) mediante el bus I2C para calcular por software giros precisos de 72° reales. | [Ficha Técnica](docs/datasheets/mpu6050.pdf) |
-| **Sensor Ultrasónico RCWL-1601** | 3 | **Lectura del Entorno:**<br>Mide la distancia a las paredes (Izquierda, Frente y Derecha) enviando ráfagas de sonido a 5.0 V. | [Ficha Técnica](docs/datasheets/rcwl_1601.pdf) |
-| **Servomotor AD002** | 1 | **Control de Dirección:**<br>Servomotor con engranajes metálicos configurado para ajustar las ruedas delanteras según el sistema de dirección Ackermann. | [Ficha Técnica](docs/datasheets/ad002_servo.pdf) |
-| **Motor DC TT (Amarillo)** | 1 | **Tracción Trasera:**<br>Motor de corriente continua conectado a la transmisión con engranajes cónicos a 90° (relación de velocidad 1:1.5). | [Ficha Técnica](docs/datasheets/motor_tt.pdf) |
+| **Arduino Nano (ATmega328P)** | 2 | **Procesamiento Distribuido:**<br>• *Maestro:* Encargado de leer los sensores (RCWL-1601, MPU-6050, PixyCam2) y calcular las correcciones de ruta (control PD).<br>• *Esclavo:* Genera las señales eléctricas (PWM) para controlar el motor principal y el servomotor de dirección. | [Ficha Técnica](docs/datasheets/arduino_nano.PDF) |
+| **Regulador Buck DSN-MINI-360** | 2 | **Regulación Aislada de Potencia:**<br>• *Canal 1:* Reduce el voltaje principal de 11.1 V - 12.6 V a unos 5.0 V estables para la lógica y los sensores.<br>• *Canal 2:* Suministra 5.0 V independientes al servomotor para evitar bajas repentinas de energía en los microcontroladores. | [Ficha Técnica](docs/datasheets/buck_converter_mini_360_dc.pdf) |
+| **Puente H L298N** | 1 | **Módulo de Potencia para Tracción:**<br>Amplifica la corriente y permite cambiar el sentido de giro del motor DC principal alimentado a 11.1 V. | [Ficha Técnica](docs/datasheets/control_driver_bridge_h_l298n.PDF) |
+| **Giroscopio / Acelerómetro MPU-6050** | 1 | **Navegación Inercial:**<br>Mide la velocidad de giro en el eje vertical ($\omega_z$) mediante el bus I2C para calcular por software giros precisos de 72° reales. | [Ficha Técnica](docs/datasheets/gyroscope_mpu-6050.md) |
+| **Sensor Ultrasónico RCWL-1601** | 3 | **Lectura del Entorno:**<br>Mide la distancia a las paredes (Izquierda, Frente y Derecha) enviando ráfagas de sonido a 5.0 V. | [Ficha Técnica](docs/datasheets/ultrasonic_sensor_rcwl-1601.md) |
+| **Servomotor AD002** | 1 | **Control de Dirección:**<br>Servomotor con engranajes metálicos configurado para ajustar las ruedas delanteras según el sistema de dirección Ackermann. | [Ficha Técnica](docs/datasheets/servo_motor_ad002.md) |
+| **Motor DC TT (Amarillo)** | 1 | **Tracción Trasera:**<br>Motor de corriente continua conectado a la transmisión con engranajes cónicos a 90° (relación de velocidad 1:1.5). | [Ficha Técnica](docs/datasheets/tt_motor.md) |
 | **Baterías de Litio Li-ion 3S** | 3 | **Fuente de Energía Principal:**<br>Conjunto de 3 celdas de litio en serie (11.1 V nominales / 12.6 V con carga completa) para abastecer tanto a los motores como a los reguladores. | [Ficha Técnica](docs/datasheets/battery_3s.pdf) |
 
 ---
 
 ### Notas sobre Organización y Archivos Técnicos
 
-Los archivos enlazados en la columna de **Ficha Técnica** forman parte de la documentación estática del proyecto y se encuentran almacenados dentro de la carpeta: `docs/datasheets/`.
+Los archivos enlazados en la columna de **Ficha Técnica** forman parte de la documentación estática del proyecto y se encuentran almacenados dentro de la carpeta: [`docs/datasheets/`](docs/datasheets/).
 
 ---
 
