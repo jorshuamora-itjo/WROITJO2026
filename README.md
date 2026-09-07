@@ -95,7 +95,7 @@ Building upon the lessons learned from Pit Dinoco, we established four core pill
 
 ## Technical Inspirations and Engineering Changes
 
-We retained the combination that yielded excellent durability results: a 3D-printed main chassis (PLA+/PETG), standard electronics, and LEGO Technic mechanical components (cross-axles, precision bushings, and 40 mm diameter by 20 mm wide wheels).
+We retained the combination that yielded excellent durability results: a 3D-printed main chassis (PLA+/PETG) and standard electronics.
 
 We replaced the traditional HC-SR04 sensors with the **RCWL-1601** model. Although they share identical pinouts (`VCC`, `TRIG`, `ECHO`, and `GND`), this new model offers distinct advantages in form factor and accuracy:
 
@@ -327,7 +327,7 @@ Performance analysis during our first track competition provided us with the rea
 
 ### Mechanical Architecture Comparison: v1.1 vs v2.0
 
-We retained the combination of materials that yielded solid results: integrating 3D-printed parts (PLA+/PETG), standard electronic components, and LEGO Technic mechanical elements (cross axles, precision bushings, and 40 mm × 20 mm wheels).
+We retained the combination of materials that yielded solid results: integrating 3D-printed parts (PLA+/PETG) and standard electronic components.
 
 However, to address structural weaknesses, we completely redesigned the chassis. The table below details the implemented improvements:
 
@@ -367,7 +367,7 @@ This configuration forces the inner wheel ($\theta_{\text{int}}$) to turn at a s
 ---
 
 #### 3. Redesigned Drivetrain: Custom 90° Bevel Gears
-To place the batteries in the center of the lower deck, we oriented the motor longitudinally along the chassis. Since off-the-shelf LEGO parts did not provide the required gear ratio in the available space, we designed and 3D printed a custom pair of **90° bevel gears**:
+To place the batteries in the center of the lower deck, we oriented the motor longitudinally along the chassis. Also we designed and 3D printed a custom pair of **90° bevel gears**:
 
 $$\text{Gear Ratio} = \frac{\text{Driven Teeth}}{\text{Drive Teeth}} = \frac{24}{16} = 1.5$$
 
@@ -1153,7 +1153,7 @@ Tomando como base los errores de Pit Dinoco, establecimos cuatro pilares esencia
 
 ## Inspiraciones Técnicas y Cambios de Ingeniería
 
-Mantuvimos la combinación que nos dio excelentes resultados en durabilidad: chasis principal en impresión 3D (PLA+/PETG), electrónica estándar y componentes mecánicos de LEGO Technic (ejes estriados en cruz, cojinetes de precisión y ruedas de 40 mm de diámetro por 20 mm de grosor).
+Mantuvimos la combinación que nos dio excelentes resultados en durabilidad: chasis principal en impresión 3D (PLA+/PETG) y electrónica estándar.
 
 Reemplazamos los sensores tradicionales HC-SR04 por el modelo **RCWL-1601**. Aunque se conectan exactamente igual (pines `VCC`, `TRIG`, `ECHO` y `GND`), este nuevo modelo ofrece ventajas marcadas en espacio y precisión:
 
@@ -1385,7 +1385,7 @@ El análisis de rendimiento durante nuestra primera participación en pista nos 
 
 ### Comparativa de Arquitectura Mecánica: v1.1 vs v2.0
 
-Mantuvimos la combinación de materiales que nos dio buenos resultados: la integración de piezas impresas en 3D (PLA+/PETG), componentes electrónicos estándar y elementos mecánicos de LEGO Technic (ejes con forma de cruz, cojinetes de precisión y ruedas de 40 mm × 20 mm).
+Mantuvimos la combinación de materiales que nos dio buenos resultados: la integración de piezas impresas en 3D (PLA+/PETG) y componentes electrónicos estándar.
 
 Sin embargo, para corregir las debilidades estructurales, rediseñamos el chasis por completo. A continuación se detallan las mejoras implementadas:
 
@@ -1425,7 +1425,7 @@ Esta configuración hace que la rueda interior ($\theta_{\text{int}}$) gire en u
 ---
 
 #### 3. Transmisión Rediseñada: Engranajes Cónicos Personalizados a 90°
-Para colocar las baterías en el centro del piso inferior, orientamos el motor a lo largo del chasis. Como las piezas comerciales de LEGO no nos daban la relación necesaria en el espacio disponible, diseñamos e imprimimos un par de **engranajes cónicos a 90°**:
+Para colocar las baterías en el centro del piso inferior, orientamos el motor a lo largo del chasis. También diseñamos e imprimimos un par de **engranajes cónicos a 90°**:
 
 $$\text{Relación de Transmisión} = \frac{\text{Dientes Conducidos}}{\text{Dientes Motrices}} = \frac{24}{16} = 1.5$$
 
