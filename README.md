@@ -939,7 +939,7 @@ Meteoro está dividido en dos niveles independientes:
 
 ---
 
-## Estrategia de Navegación de Meteoro
+## Estrategia de Navegación de Meteoro para Reto Abierto
 
 La estrategia de navegación de Meteoro utiliza una arquitectura de control de monitoreo constante (bucle cerrado) dividida en tres pilares: lectura y filtrado EMA, Máquina de Estados Finitos (FSM) y controladores en tiempo real.
 
@@ -1010,6 +1010,82 @@ float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) 
     return (alpha * lecturaActual) + ((1.0 - alpha) * lecturaAnterior);
 }
 ```
+
+---
+
+## Estrategia de Navegación de Meteoro para Reto de Obstáculos
+
+Para superar con éxito el Reto de Obstáculos, el vehículo autónomo Meteoro hace evolucionar su sistema de control. Sobre la base del centrado de carril mediante el algoritmo PD y la máquina de estados finitos (FSM), integramos un sistema de visión artificial en tiempo real a través de la cámara PixyCam 2, el cual trabaja en perfecta sincronía con la unidad de medición inercial MPU6050.
+
+Mantenemos nuestra arquitectura de procesamiento distribuido Maestro-Esclavo conectada mediante el bus I2C a una frecuencia de 100 kHz. De esta manera, el microcontrolador Maestro asume la responsabilidad de procesar las imágenes y ejecutar la lógica de decisiones, mientras que el Esclavo se dedica exclusivamente a accionar la dirección Ackermann y el motor de tracción en el puente H.
+
+---
+
+### 1. Percepción Visual y Filtro Anti-Falsos Positivos
+
+La PixyCam 2 se encarga de identificar y clasificar las señales del circuito mediante el reconocimiento de dos marcas cromáticas bien definidas:
+* **Firma 1 (Verde):** Indica un obstáculo que el vehículo debe esquivar pasando por la **IZQUIERDA**.
+* **Firma 2 (Roja):** Indica un obstáculo que debe esquivarse pasando por la **DERECHA**.
+
+#### Filtro de Proximidad y Antirrebote (Debounce)
+En un entorno de competencia, los reflejos de luz en el suelo o los destellos lejanos pueden generar lecturas erróneas. Para evitar maniobras bruscas o falsos esquives, implementamos una validación en dos pasos:
+1. **Filtro por Dimensión Vertical ($h$):** El sistema ignora cualquier marca lejana o ruido visual. Solo se consideran válidos los bloques cuya altura en píxeles se encuentre dentro del rango operacional de proximidad ($60\text{ px} \le h \le 240\text{ px}$).
+2. **Antirrebote Temporal por Tramas (Debounce):** Exigimos que la firma de color sea detectada de manera ininterrumpida durante al menos 3 tramas consecutivas (`UMBRAL_CONFIRMACION = 3`). Únicamente al cumplir esta condición se activan las banderas de maniobra (`verdeConfirmado` o `rojaConfirmada`).
+
+---
+
+### 2. Máquina de Estados Finitos (FSM) y Jerarquía de Prioridades
+
+La máquina de estados del microcontrolador Maestro (`EstadoEsquive`) organiza el comportamiento del auto bajo una estructura jerárquica estricta. Esto evita conflictos cuando coinciden lecturas de visión, ultrasonido u orientación inercial:
+
+#### Matriz de Prioridades de Decisiones
+
+| Prioridad | Condición de Activación | Estado Activado | Acción Principal |
+| :---: | :--- | :--- | :--- |
+| **1 (Máxima)** | `verdeConfirmado` o `rojaConfirmada` | `ESQUIVANDO_IZQ` / `DER` | Inicia de inmediato la secuencia inercial de esquive. |
+| **2 (Media)** | $d_{\text{front}} \le 90\text{ cm}$ y espacio abierto lateral | `GIRANDO_CURVA` | Ejecuta un giro inercial de 63° hacia la apertura. |
+| **3 (Base)** | Sin obstáculos ni giros pendientes | `RECTA_NORMAL` | Centra el auto en el carril usando el control PD ($\text{Zona Azul} = \pm 3.5\text{ cm}$). |
+
+---
+
+### 3. Algoritmo de Esquive en 3 Fases (Control Inercial Cerrado)
+
+En lugar de basar las maniobras invasivas en temporizadores fijos —los cuales fallan cuando cambia el agarre de los neumáticos o disminuye la carga de la batería—, Meteoro utiliza la medición de orientación del giroscopio MPU6050. Esto nos asegura un cambio de carril preciso y una reincorporación en trayectoria paralela a la pista.
+
+#### Secuencia Evasiva para Obstáculo Verde (Paso por la Izquierda)
+
+1. **Fase 1: Desvío Diagonal (`ESQUIVANDO_IZQ`):**
+   * **Dirección:** Se ajusta el servo a 125° (volante girado a la derecha).
+   * **Criterio de transición:** El giroscopio integra la velocidad angular hasta registrar una rotación neta de $\theta_z \ge +10.0^\circ$ (o hasta que la marca visual supere la coordenada $x \ge 220\text{ px}$).
+
+2. **Fase 2: Rebase Paralelo (`REBASANDO_IZQ`):**
+   * **Dirección:** Se centra la dirección exactamente a 90°.
+   * **Criterio de transición:** El auto avanza recto en el carril opuesto para rebasar el obstáculo durante $t_{\text{rebase}} = 600\text{ ms}$.
+
+3. **Fase 3: Enderezado y Reincorporación (`ENDEREZANDO_IZQ`):**
+   * **Dirección:** Se aplica contravolante con la dirección a 45°.
+   * **Criterio de transición:** Se monitorea la lectura del giroscopio hasta que la inclinación acumulada regrese a $\theta_z \le 0.0^\circ$ (cancelando la inclinación inicial), o bien transcurra un tiempo máximo de protección de 200 ms. Al completarse, el sistema retorna suavemente al estado `RECTA_NORMAL`.
+
+> **Nota:** La maniobra para esquivar el Obstáculo Rojo aplica una geometría simétrica inversa: giro inicial a 35° hasta alcanzar $\theta_z \le -10.0^\circ$, avance centrado a 90° durante 600 ms y contravolante de enderezado a 135°.
+
+---
+
+### 4. Detección Adaptativa de Esquinas ("Hueco Lateral")
+
+Para evitar que el auto confunda la pared de una esquina cercana con un obstáculo que deba esquivar, el algoritmo combina de forma inteligente la información de la PixyCam y de los tres sensores de ultrasonido:
+
+1. **Inmunidad por Memoria de Cámara:** Si la cámara detectó cualquier marca cromática durante el último segundo (`millis() - ultimoTiempoBloque < 1000 ms`), la activación de giros de pista se inhabilita de forma automática.
+2. **Criterio de Vía Abierta ("Hueco Lateral"):** El sistema detecta la llegada a una esquina evaluando la apertura repentina de un muro lateral ($d_{\text{izq}} > 90\text{ cm}$ o $d_{\text{der}} > 90\text{ cm}$) combinada con la presencia de la pared frontal en rango de aproximación ($55\text{ cm} < d_{\text{front}} \le 90\text{ cm}$).
+3. **Confirmación e Integración de Curva:** Tras confirmar dos lecturas válidas consecutivas (`UMBRAL_CURVA = 2`), se ingresa al estado `GIRANDO_CURVA` fijando la dirección a 35° o 145° según el lado del hueco detectado. El viraje se mantiene de forma activa hasta que el MPU6050 contabiliza un giro real de $\theta_z = 63.0^\circ$.
+4. **Protección de Salida (`COOLDOWN_CURVA`):** Una vez completada la curva, se centra el servo durante 200 ms para estabilizar la marcha y se activa un bloqueo temporal de 2000 ms (`FRONT_COOLDOWN_CURVA`) que impide registrar falsos giros con el muro de salida.
+
+---
+
+### 5. Comunicación y Arquitectura Distribuida I2C
+
+Para evitar retrasos en el ciclo de cálculo de control PD causados por el tiempo que toma procesar la cámara y las lecturas de sonido, la ejecución física de los motores está totalmente separada en el microcontrolador Esclavo:
+* **Transmisión de Mensajes:** El Maestro genera y transmite paquetes livianos de 2 bytes con el formato: `[ángulo_destino, velocidad_actual]`.
+* **Procesamiento por Interrupción:** El Esclavo recibe los comandos mediante la rutina `Wire.onReceive()`, guardando los valores en variables declaradas como `volatile`. Esto garantiza que la actualización física del ángulo del servo y la potencia del motor se realice en el ciclo principal de forma inmediata, limpia y segura.
 
 ---
 
@@ -1223,7 +1299,7 @@ El desarrollo del software para nuestro vehículo no ocurrió de la noche a la m
 
 Para garantizar un tiempo de ciclo ($\Delta t$) constante y libre de retrasos en la generación de señales de velocidad, el código actual ubicado en `src/current/` divide la carga computacional en dos procesadores a través del bus I2C a 100 kHz.
 
-#### Análisis del Código Esclavo (`src/current/nano_slave.cpp`)
+#### Análisis del Código Esclavo para Reto Abierto  (`src/current/first_challenge/nano_slave.cpp`)
 
 El microcontrolador Esclavo funciona como un controlador periférico dedicado exclusivamente al movimiento físico de la dirección y la tracción, manteniendo la lógica limpia de interrupciones de tiempo de sensores.
 
@@ -1261,7 +1337,7 @@ void arrancarSuave() {
 }
 ```
 
-### Análisis del Código Maestro (`src/current/nano_master.cpp`)
+### Análisis del Código Maestro para Reto Abierto (`src/current/first_challenge/nano_master.cpp`)
 
 El microcontrolador Maestro es el cerebro principal: analiza lo que sucede alrededor con los sensores, mide los giros del auto, administra los cambios de modo y calcula los ajustes necesarios para mantener la ruta ideal.
 
@@ -1352,6 +1428,211 @@ $$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t-\Delta t)}{\Delta t}$$
 * **Ganancia Proporcional ($K_p = 10.33$):** Responde a la magnitud del descentrado del vehículo.
 * **Ganancia Derivativa ($K_d = 14.0$):** Frena el balanceo lateral prediciendo la velocidad con la que el auto se acerca al muro.
 * **Límite Estricto de Giro:** La salida  $u(t)$  está acotada a ±15° alrededor del punto medio del servomotor (92°), restringiendo el ángulo físico de la dirección a la ventana comprendida entre 57° y 127°.
+
+---
+
+### Análisis del Código Esclavo para Reto de Obstáculos (`src/current/second_challenge/slave_nano.cpp`)
+
+En la arquitectura de Meteoro, el microcontrolador Esclavo actúa como un nodo de ejecución periférica. Su responsabilidad principal es abstraer la generación de señales físicas de modulación por ancho de pulso (PWM) para la tracción y la servodirección. De esta manera, se evita que los tiempos de comunicación del bus I2C afecten el rendimiento dinámico y la respuesta física del vehículo.
+
+---
+
+#### 1. Interrupción I2C y Desacoplamiento de Actuación
+
+Para prevenir bloqueos en la recepción de datos y evitar inconsistencias en la escritura de registros mientras el microcontrolador ejecuta instrucciones de control, los paquetes entrantes procesados por la función `Wire.onReceive(recibirDatosI2C)` se almacenan en búferes de memoria protegidos mediante el calificador `volatile`:
+
+```cpp
+volatile byte anguloRecibido = 90;
+volatile byte velRecibida = 255;
+volatile bool actualizarMotores = false;
+```
+
+La rutina de atención a la interrupción (ISR) valida la cantidad de bytes recibidos, extrae las órdenes de ángulo y velocidad, y activa de inmediato una bandera de notificación. Este diseño garantiza que la rutina devuelva el control al bus de forma casi instantánea:
+
+```cpp
+void recibirDatosI2C(int cuantosBytes) {
+  if (cuantosBytes >= 2) {
+    anguloRecibido = Wire.read();
+    velRecibida = Wire.read();
+    actualizarMotores = true; // Notifica al ciclo principal
+  }
+}
+```
+
+#### 2. Ejecución Asíncrona en Bucle Abierto
+
+El bucle principal (`loop()`) evalúa constantemente la bandera `actualizarMotores`. Cuando detecta una actualización, aplica de inmediato los nuevos valores a los actuadores físicos. Esto asegura que la actualización del servomotor (`miServo.write()`) y del puente H (`analogWrite()`) se realice fuera del contexto rígido de la interrupción:
+
+```cpp
+void loop() {
+  if (actualizarMotores) {
+    miServo.write(anguloRecibido);
+    analogWrite(pinA, velRecibida);
+    digitalWrite(pinB, LOW);
+    actualizarMotores = false; // Reinicia la señal de aviso
+  }
+}
+```
+
+---
+
+### Análisis del Código Maestro para Reto de Obstáculos `(src/current/maestro_2.cpp)`
+
+El microcontrolador Maestro constituye la unidad central de percepción y toma de decisiones. Coordina el procesamiento de visión en tiempo real enviado por la cámara PixyCam 2, la fusión de distancias ultrasónicas mediante la librería `NewPing` y el cálculo de orientación angular a través del giroscopio MPU6050.
+
+---
+
+#### 1. Percepción Visual y Filtro Anti-Falsos Positivos (Debounce)
+
+Para evitar maniobras de esquive no deseadas causadas por reflejos en la pista o destellos de luz, el algoritmo filtra las firmas de color detectadas mediante un sistema de validación en dos etapas en cascada:
+
+#### A. Filtro por Tamaño de Bloque ($h$)
+El sistema descarta cualquier bloque cuya altura en píxeles ($h$) no pertenezca al rango operativo de proximidad. Esto garantiza que solo se reaccione ante obstáculos reales ubicados a una distancia relevante de la defensa frontal:
+
+$$60\text{ px} \le h \le 240\text{ px}$$
+
+#### B. Antirrebote Temporal por Confirmación de Tramas
+El algoritmo exige una presencia continua de la misma marca de color a lo largo de $N$ tramas consecutivas (`UMBRAL_CONFIRMACION = 3`). Únicamente cuando se alcanza esta consistencia se activan las banderas lógicas de maniobra (`verdeConfirmado` o `rojaConfirmada`):
+
+```cpp
+if (verdeEnFrame) {
+  lecturasVerdeConsecutivas++;
+  lecturasRojaConsecutivas = 0;
+} else if (rojaEnFrame) {
+  lecturasRojaConsecutivas++;
+  lecturasVerdeConsecutivas = 0;
+} else {
+  lecturasVerdeConsecutivas = 0;
+  lecturasRojaConsecutivas = 0;
+}
+
+bool verdeConfirmado = (lecturasVerdeConsecutivas >= UMBRAL_CONFIRMACION);
+bool rojaConfirmada = (lecturasRojaConsecutivas >= UMBRAL_CONFIRMACION);
+```
+
+#### 2. Filtrado de Distancia y Tratamiento de Eco Perdido
+
+Las lecturas crudas de los tres sensores ultrasónicos se procesan mediante un filtro de Promedio Móvil Exponencial (EMA) para atenuar variaciones bruscas. Cuando el pulso ultrasónico no regresa debido a una apertura en la pared (obteniendo un valor de 0.0 cm en `NewPing`), el algoritmo sustituye el valor nulo por el límite superior práctico del entorno (200.0 cm). Esta saturación controlada evita inconsistencias en las ecuaciones de control:
+
+```cpp
+float filtrarLectura(float lecturaCruda, float lecturaAnterior) {
+  if (lecturaCruda == 0.0) {
+    lecturaCruda = 200.0; // Saturación por ausencia de eco (vía abierta)
+  } else if (lecturaCruda <= 2.0) {
+    return lecturaAnterior; // Descarte de ruido por contacto o vibración
+  }
+
+  float alpha = 0.4;
+  return (alpha * lecturaCruda) + ((1.0 - alpha) * lecturaAnterior);
+}
+```
+
+#### 3. Integración Inercial de Guiñada ($\theta_z$) con MPU6050
+
+El ángulo de orientación sobre el eje vertical ($\theta_z$) se calcula mediante la integración numérica continua de la velocidad angular ($\omega_z$) capturada del registro `0x47` del giroscopio MPU6050 a través de I2C:
+
+$$\theta_z(k) = \theta_z(k-1) + \left( \frac{\text{giroZ} - \text{offsetZ}}{131.0} \right) \cdot \Delta t$$
+
+Donde la constante 131.0 LSB/(°/s) corresponde al factor de escala para la sensibilidad configurada de ±250°/s.
+
+```cpp
+float giroZ = (leerGiroscopioZ() - offsetZ) / 131.0;
+
+if (estadoEsquive != RECTA_NORMAL) {
+  anguloZ_acumulado += (giroZ * dt);
+}
+```
+
+### 4. Máquina de Estados Finitos (FSM) con Jerarquía de Prioridades
+
+La FSM del Maestro organiza el comportamiento global del vehículo estableciendo una estricta jerarquía de decisiones para resolver cualquier conflicto entre la cámara, los sensores ultrasónicos y la IMU:
+
+* **Prioridad 1 (Máxima):** Esquive inercial de obstáculos (`ESQUIVANDO_IZQ` / `ESQUIVANDO_DER`). Se activa de forma inmediata al confirmar una firma cromática.
+* **Prioridad 2 (Media):** Giro adaptativo en esquinas por espacio lateral (`GIRANDO_CURVA`). Se activa al detectar la desaparición de un muro lateral junto a la aproximación de la pared frontal.
+* **Prioridad 3 (Base):** Centrado automático de carril mediante control PD (`RECTA_NORMAL`). Opera por defecto cuando no hay maniobras ni giros pendientes.
+
+#### 5. Control PD de Carril con Zona Muerta (Zona Azul)
+
+Durante el estado `RECTA_NORMAL`, el vehículo mantiene una trayectoria centrada evaluando el error de desviación lateral $e(t)$:
+
+$$e(t) = \frac{d_{\text{der}} - d_{\text{izq}}}{2}$$
+
+#### A. Filtro de Zona Azul (±3.5 cm)
+Para prevenir oscilaciones innecesarias en las ruedas delanteras generadas por pequeñas irregularidades en la pared, el algoritmo aplica una zona muerta de ±3.5 cm:
+
+```cpp
+const float ZONA_AZUL = 3.5;
+
+if (abs(distancia_al_centro) <= ZONA_AZUL) {
+  error = 0;
+} else {
+  if (distancia_al_centro > 0) error = distancia_al_centro - ZONA_AZUL;
+  else error = distancia_al_centro + ZONA_AZUL;
+}
+```
+
+#### B. Ecuación de Control y Acotamiento de Salida
+
+Se aplica la acción proporcional y derivativa. Para evitar saltos bruscos en el servo, se limita la razón de cambio de la derivada ($\frac{\Delta e}{\Delta t}$) y se acota la corrección total $u(t)$ a un rango dinámico seguro:
+
+$$u(t) = \text{constrain}\left( K_p \cdot e(t) + K_d \cdot \text{constrain}\left(\frac{e(t) - e(t-\Delta t)}{\Delta t}, -150, 150\right), -17, 17 \right)$$
+
+$$\text{anguloDestino} = \text{constrain}\left( 90 + u(t), 45, 135 \right)$$
+
+---
+
+#### 6. Algoritmo de Esquive Inercial en 3 Fases
+
+Al confirmar una firma cromática válida, la FSM ejecuta una secuencia de esquive guiada dinámicamente por la orientación del giroscopio:
+
+#### Secuencia de Manejo para Obstáculo Verde (Paso por la Izquierda)
+
+1. **Fase 1: Desvío Diagonal (`ESQUIVANDO_IZQ`):**
+   * **Ángulo de dirección:** 125° (viraje inicial).
+   * **Criterio de salida:** Se monitorea la inclinación acumulada hasta registrar $\theta_z \ge +10.0^\circ$ (o bien el centroide visual alcance $x \ge 220\text{ px}$).
+
+2. **Fase 2: Rebase Paralelo (`REBASANDO_IZQ`):**
+   * **Ángulo de dirección:** 90° (dirección centrada).
+   * **Criterio de salida:** El auto avanza recto en el carril opuesto para rebasar el obstáculo durante un intervalo fijo de $t_{\text{rebase}} = 600\text{ ms}$.
+
+3. **Fase 3: Enderezado y Reincorporación (`ENDEREZANDO_IZQ`):**
+   * **Ángulo de dirección:** 45° (contravolante opuesto).
+   * **Criterio de salida:** La rotación inercial neta cancela la inclinación inicial ($\theta_z \le 0.0^\circ$) o transcurre el tiempo límite de seguridad ($t_{\text{ender}} = 200\text{ ms}$). Cumplida la condición, el sistema regresa limpiamente al estado `RECTA_NORMAL`.
+
+> **Nota:** La maniobra evasiva para el Obstáculo Rojo ejecuta un patrón geométrico simétrico opuesto: ángulo inicial a 35° hasta $\theta_z \le -10.0^\circ$, rebase centrado a 90° por 600 ms y contravolante de enderezado a 135°.
+
+#### 7. Detección Adaptativa de Esquinas ("Hueco Lateral")
+
+Para virar en los cruces de la pista sin confundir la pared de la esquina con un obstáculo de color, el programa evalúa la apertura de un muro lateral en combinación con la proximidad de la pared frontal:
+
+```cpp
+bool posibleObstaculo = (millis() - ultimoTiempoBloque < MEMORIA_PIXY_MS);
+bool huecoIzquierda = (distIzqFiltrada > 90.0);
+bool huecoDerecha = (distDerFiltrada > 90.0);
+
+if (distFrontFiltrada <= 90.0 && distFrontFiltrada > 55.0 &&
+    (huecoIzquierda || huecoDerecha) &&
+    !posibleObstaculo &&
+    (millis() - ultimoTiempoCurva > FRONT_COOLDOWN_CURVA)) {
+
+  confirmacionCurva++;
+
+  if (confirmacionCurva >= UMBRAL_CURVA) {
+    estadoEsquive = GIRANDO_CURVA;
+    anguloZ_acumulado = 0.0;
+    confirmacionCurva = 0;
+
+    if (huecoIzquierda) {
+      direccionGiroCurva = 35; // Giro a la izquierda
+    } else {
+      direccionGiroCurva = 145; // Giro a la derecha
+    }
+  }
+}
+```
+
+* **Transición inercial:** En el estado `GIRANDO_CURVA`, la dirección se sostiene a 35° o 145° hasta que el giroscopio contabiliza una rotación real de $\theta_z \ge 63.0^\circ$ (`ANGULO_OBJETIVO_CURVA`).
+* **Estado de estabilización (`COOLDOWN_CURVA`):** Tras completar el viraje, la dirección se centra a 90° durante 200 ms (`TIEMPO_COOLDOWN_CURVA`) y se inhabilita la detección de giros por 2000 ms (`FRONT_COOLDOWN_CURVA`) para ignorar los reflejos con la pared de salida.
 
 ---
 
