@@ -32,7 +32,7 @@ This repository contains all engineering materials, CAD models, schematic diagra
 * **[`photos/`](photos/)**: Unified photo gallery containing official team photos, vehicle views, and assembly/programming logs.
 * **[`video/`](video/)**: File containing the direct link to the track demonstration video.
 * **[`schematics/`](schematics/)**: Schematic diagrams of electromechanical components, illustrating all parts (electronic components and motors) used in the vehicle and how they connect.
-* **[`docs/`](docs/)**: Additional documentation, datasheets, pinout tables, and pit checklists.
+* **[`docs/`](docs/)**: Additional documentation, datasheets, flow charts, and pit checklists.
 
 ---
 
@@ -1090,7 +1090,7 @@ Este repositorio contiene todos los materiales de ingeniería, modelos CAD, diag
 * **[`photos/`](photos/)**: Galería fotográfica unificada que contiene tanto fotos oficiales del equipo, vistas del carro y registros del proceso de armado y programación.
 * **[`video/`](video/)**: Archivo con el enlace directo al video de demostración de manejo en pista.
 * **[`schematics/`](schematics/)**: Diagramas esquemáticos de los componentes electromecánicos, ilustrando todos los elementos (componentes electrónicos y motores) utilizados en el vehículo y cómo se conectan entre sí.
-* **[`docs/`](docs/)**: Documentación adicional, hojas de datos, tablas de pines y listas de verificación en foso.
+* **[`docs/`](docs/)**: Documentación adicional, hojas de datos, diagramas de flujo y listas de verificación en foso.
 
 ---
 
