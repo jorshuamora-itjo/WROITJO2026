@@ -522,7 +522,7 @@ Software development for our vehicle did not happen overnight. Facing the real t
 
 To guarantee a constant cycle time ($\Delta t$) free of execution delays during motor control signal generation, the current codebase located in `src/current/` divides computational load across two processors communicating over the I2C bus at 100 kHz.
 
-#### Slave Code Analysis (`src/current/nano_slave.cpp`)
+#### Slave Code Analysis for the Open Challenge (`src/current/nano_slave.cpp`)
 
 The Slave microcontroller acts as a dedicated peripheral controller exclusively managing the physical movement of steering and traction, keeping logic execution isolated from sensor-related timing delays.
 
@@ -560,7 +560,7 @@ void arrancarSuave() {
 }
 ```
 
-### Master Code Analysis (`src/current/nano_master.cpp`)
+### Master Code Analysis for the Open Challenge (`src/current/nano_master.cpp`)
 
 The Master microcontroller serves as the primary brain: it analyzes surroundings via sensors, measures car turns, manages mode changes, and computes the adjustments required to maintain the ideal path.
 
@@ -651,6 +651,209 @@ $$u(t) = K_p \cdot e(t) + K_d \cdot \frac{e(t) - e(t-\Delta t)}{\Delta t}$$
 * **Proportional Gain ($K_p = 10.33$):** Responds to the magnitude of the vehicle's off-center offset.
 * **Derivative Gain ($K_d = 14.0$):** Dampens lateral oscillation by predicting the velocity at which the car approaches the wall.
 * **Strict Steering Limit:** The output $u(t)$ is bounded to ±15° around the steering servo's neutral point (92°), restricting the physical steering angle to a window between 57° and 127°.
+
+---
+
+### Analysis of the Slave Code for the Obstacle Challenge (`src/current/second_challenge/slave_nano.cpp`)
+
+In Meteoro's architecture, the Slave microcontroller acts as a peripheral execution node. Its main responsibility is to abstract the physical generation of Pulse-Width Modulation (PWM) signals for traction and steering. In this way, I2C bus communication times are prevented from affecting the vehicle's dynamic performance and physical response.
+
+---
+
+#### 1. I2C Interrupt and Actuation Decoupling
+
+To prevent locks in data reception and avoid register write inconsistencies while the microcontroller executes control instructions, incoming packets processed by the `Wire.onReceive(recibirDatosI2C)` function are stored in memory buffers protected by the `volatile` qualifier:
+
+```cpp
+volatile byte anguloRecibido = 90;
+volatile byte velRecibida = 255;
+volatile bool actualizarMotores = false;
+```
+
+The Interrupt Service Routine (ISR) validates the number of received bytes, extracts the angle and speed commands, and immediately activates a notification flag. This design guarantees that the routine returns control to the bus almost instantaneously:
+
+```cpp
+void recibirDatosI2C(int cuantosBytes) {
+  if (cuantosBytes >= 2) {
+    anguloRecibido = Wire.read();
+    velRecibida = Wire.read();
+    actualizarMotores = true; // Notifies the main loop
+  }
+}
+```
+
+#### 2. Asynchronous Open-Loop Execution
+
+The main loop (`loop()`) constantly evaluates the `actualizarMotores` flag. When an update is detected, it immediately applies the new values to the physical actuators. This ensures that updating the servomotor (`miServo.write()`) and the H-bridge (`analogWrite()`) takes place outside the rigid context of the interrupt:
+
+```cpp
+void loop() {
+  if (actualizarMotores) {
+    miServo.write(anguloRecibido);
+    analogWrite(pinA, velRecibida);
+    digitalWrite(pinB, LOW);
+    actualizarMotores = false; // Resets the notification signal
+  }
+}
+```
+
+---
+
+### Analysis of the Master Code for the Obstacle Challenge (`src/current/second_challenge/master_nano.cpp`)
+
+The Master microcontroller constitutes the central processing and decision-making unit. It coordinates real-time vision processing sent by the PixyCam 2 camera, ultrasonic distance fusion using the `NewPing` library, and angular orientation calculation via the MPU6050 gyroscope.
+
+---
+
+#### 1. Visual Perception and Anti-False Positive Filter (Debounce)
+
+To avoid unwanted dodge maneuvers caused by track reflections or light flashes, the algorithm filters detected color signatures using a two-stage cascaded validation system:
+
+#### A. Filter by Block Size ($h$)
+The system discards any block whose height in pixels ($h$) does not fall within the operational proximity range. This ensures reaction only to real obstacles located at a relevant distance from the front bumper:
+
+$$60\text{ px} \le h \le 240\text{ px}$$
+
+#### B. Temporal Frame Confirmation Debounce
+The algorithm requires a continuous presence of the same color signature across $N$ consecutive frames (`UMBRAL_CONFIRMACION = 3`). Only when this consistency is reached are the logical maneuver flags (`verdeConfirmado` or `rojaConfirmada`) activated:
+
+```cpp
+if (verdeEnFrame) {
+  lecturasVerdeConsecutivas++;
+  lecturasRojaConsecutivas = 0;
+} else if (rojaEnFrame) {
+  lecturasRojaConsecutivas++;
+  lecturasVerdeConsecutivas = 0;
+} else {
+  lecturasVerdeConsecutivas = 0;
+  lecturasRojaConsecutivas = 0;
+}
+
+bool verdeConfirmado = (lecturasVerdeConsecutivas >= UMBRAL_CONFIRMACION);
+bool rojaConfirmada = (lecturasRojaConsecutivas >= UMBRAL_CONFIRMACION);
+```
+
+#### 2. Distance Filtering and Lost Echo Handling
+
+Raw readings from the three ultrasonic sensors are processed using an Exponential Moving Average (EMA) filter to smooth out sudden variations. When the ultrasonic pulse does not return due to a wall opening (yielding a value of 0.0 cm in `NewPing`), the algorithm replaces the null value with the practical upper limit of the environment (200.0 cm). This controlled saturation prevents inconsistencies in control equations:
+
+```cpp
+float filtrarLectura(float lecturaCruda, float lecturaAnterior) {
+  if (lecturaCruda == 0.0) {
+    lecturaCruda = 200.0; // Saturation due to missing echo (open path)
+  } else if (lecturaCruda <= 2.0) {
+    return lecturaAnterior; // Noise rejection due to contact or vibration
+  }
+
+  float alpha = 0.4;
+  return (alpha * lecturaCruda) + ((1.0 - alpha) * lecturaAnterior);
+}
+```
+
+#### 3. Yaw Inertial Integration ($\theta_z$) with MPU6050
+
+The orientation angle along the vertical axis ($\theta_z$) is calculated via continuous numerical integration of the angular velocity ($\omega_z$) captured from register `0x47` of the MPU6050 gyroscope via I2C:
+
+$$\theta_z(k) = \theta_z(k-1) + \left( \frac{\text{giroZ} - \text{offsetZ}}{131.0} \right) \cdot \Delta t$$
+
+Where the constant 131.0 LSB/(°/s) corresponds to the scale factor for the configured sensitivity of ±250°/s.
+
+```cpp
+float giroZ = (leerGiroscopioZ() - offsetZ) / 131.0;
+
+if (estadoEsquive != RECTA_NORMAL) {
+  anguloZ_acumulado += (giroZ * dt);
+}
+```
+
+#### 4. Finite State Machine (FSM) with Priority Hierarchy
+
+The Master's FSM organizes the overall behavior of the vehicle by establishing a strict decision hierarchy to resolve any conflict between the camera, ultrasonic sensors, and IMU:
+
+* **Priority 1 (Highest):** Inertial obstacle dodging (`ESQUIVANDO_IZQ` / `ESQUIVANDO_DER`). Activated immediately upon confirming a chromatic signature.
+* **Priority 2 (Medium):** Adaptive corner turning via lateral clearance (`GIRANDO_CURVA`). Activated when detecting the disappearance of a side wall alongside the approach of the front wall.
+* **Priority 3 (Base):** Automatic lane centering via PD control (`RECTA_NORMAL`). Operates by default when no maneuvers or pending turns exist.
+
+#### 5. Lane PD Control with Deadband (Blue Zone)
+
+During the `RECTA_NORMAL` state, the vehicle maintains a centered trajectory by evaluating the lateral deviation error $e(t)$:
+
+$$e(t) = \frac{d_{\text{der}} - d_{\text{izq}}}{2}$$
+
+#### A. Blue Zone Filter (±3.5 cm)
+To prevent unnecessary oscillations in the front wheels caused by small wall irregularities, the algorithm applies a deadband of ±3.5 cm:
+
+```cpp
+const float ZONA_AZUL = 3.5;
+
+if (abs(distancia_al_centro) <= ZONA_AZUL) {
+  error = 0;
+} else {
+  if (distancia_al_centro > 0) error = distancia_al_centro - ZONA_AZUL;
+  else error = distancia_al_centro + ZONA_AZUL;
+}
+```
+
+#### B. Control Equation and Output Bounding
+
+Proportional and derivative action is applied. To avoid abrupt jumps in the servo, the rate of change of the derivative ($\frac{\Delta e}{\Delta t}$) is constrained, and the total correction $u(t)$ is bounded to a safe dynamic range:
+
+$$u(t) = \text{constrain}\left( K_p \cdot e(t) + K_d \cdot \text{constrain}\left(\frac{e(t) - e(t-\Delta t)}{\Delta t}, -150, 150\right), -17, 17 \right)$$
+
+$$\text{anguloDestino} = \text{constrain}\left( 90 + u(t), 45, 135 \right)$$
+
+#### 6. 3-Phase Inertial Dodge Algorithm
+
+Upon confirming a valid chromatic signature, the FSM executes a dodge sequence guided dynamically by the gyroscope's orientation:
+
+#### Driving Sequence for Green Obstacle (Passing on the Left)
+
+1. **Phase 1: Diagonal Deviation (`ESQUIVANDO_IZQ`):**
+   * **Steering angle:** 125° (initial turn).
+   * **Exit criterion:** Accumulated inclination is monitored until registering $\theta_z \ge +10.0^\circ$ (or until the visual centroid reaches $x \ge 220\text{ px}$).
+
+2. **Phase 2: Parallel Overtake (`REBASANDO_IZQ`):**
+   * **Steering angle:** 90° (centered steering).
+   * **Exit criterion:** The car advances straight in the opposite lane to overtake the obstacle for a fixed interval of $t_{\text{rebase}} = 600\text{ ms}$.
+
+3. **Phase 3: Straightening and Re-entry (`ENDEREZANDO_IZQ`):**
+   * **Steering angle:** 45° (opposite counter-steer).
+   * **Exit criterion:** Net inertial rotation cancels initial inclination ($\theta_z \le 0.0^\circ$) or safety limit time elapses ($t_{\text{ender}} = 200\text{ ms}$). Once the condition is met, the system cleanly returns to the `RECTA_NORMAL` state.
+
+> **Note:** The evasive maneuver for the Red Obstacle executes an opposite symmetrical geometric pattern: initial angle at 35° until $\theta_z \le -10.0^\circ$, centered overtake at 90° for 600 ms, and straightening counter-steer at 135°.
+
+#### 7. Adaptive Corner Detection ("Side Gap")
+
+To turn at track intersections without confusing the corner wall with a colored obstacle, the program evaluates the opening of a side wall in combination with the proximity of the front wall:
+
+```cpp
+bool posibleObstaculo = (millis() - ultimoTiempoBloque < MEMORIA_PIXY_MS);
+bool huecoIzquierda = (distIzqFiltrada > 90.0);
+bool huecoDerecha = (distDerFiltrada > 90.0);
+
+if (distFrontFiltrada <= 90.0 && distFrontFiltrada > 55.0 &&
+    (huecoIzquierda || huecoDerecha) &&
+    !posibleObstaculo &&
+    (millis() - ultimoTiempoCurva > FRONT_COOLDOWN_CURVA)) {
+
+  confirmacionCurva++;
+
+  if (confirmacionCurva >= UMBRAL_CURVA) {
+    estadoEsquive = GIRANDO_CURVA;
+    anguloZ_acumulado = 0.0;
+    confirmacionCurva = 0;
+
+    if (huecoIzquierda) {
+      direccionGiroCurva = 35; // Left turn
+    } else {
+      direccionGiroCurva = 145; // Right turn
+    }
+  }
+}
+```
+
+* **Inertial transition:** In the `GIRANDO_CURVA` state, steering is held at 35° or 145° until the gyroscope measures a real rotation of $\theta_z \ge 63.0^\circ$ (`ANGULO_OBJETIVO_CURVA`).
+* **Stabilization state (`COOLDOWN_CURVA`):** After completing the turn, steering is centered at 90° for 200 ms (`TIEMPO_COOLDOWN_CURVA`), and turn detection is disabled for 2000 ms (`FRONT_COOLDOWN_CURVA`) to ignore reflections from the exit wall.
 
 ---
 
@@ -1554,7 +1757,7 @@ void loop() {
 
 ---
 
-### Análisis del Código Maestro para Reto de Obstáculos `(src/current/maestro_2.cpp)`
+### Análisis del Código Maestro para Reto de Obstáculos `(src/current/second_challenge/master_nano.cpp)`
 
 El microcontrolador Maestro constituye la unidad central de percepción y toma de decisiones. Coordina el procesamiento de visión en tiempo real enviado por la cámara PixyCam 2, la fusión de distancias ultrasónicas mediante la librería `NewPing` y el cálculo de orientación angular a través del giroscopio MPU6050.
 
@@ -1621,7 +1824,7 @@ if (estadoEsquive != RECTA_NORMAL) {
 }
 ```
 
-### 4. Máquina de Estados Finitos (FSM) con Jerarquía de Prioridades
+#### 4. Máquina de Estados Finitos (FSM) con Jerarquía de Prioridades
 
 La FSM del Maestro organiza el comportamiento global del vehículo estableciendo una estricta jerarquía de decisiones para resolver cualquier conflicto entre la cámara, los sensores ultrasónicos y la IMU:
 
@@ -1656,8 +1859,6 @@ Se aplica la acción proporcional y derivativa. Para evitar saltos bruscos en el
 $$u(t) = \text{constrain}\left( K_p \cdot e(t) + K_d \cdot \text{constrain}\left(\frac{e(t) - e(t-\Delta t)}{\Delta t}, -150, 150\right), -17, 17 \right)$$
 
 $$\text{anguloDestino} = \text{constrain}\left( 90 + u(t), 45, 135 \right)$$
-
----
 
 #### 6. Algoritmo de Esquive Inercial en 3 Fases
 
