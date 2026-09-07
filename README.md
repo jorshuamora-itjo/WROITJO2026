@@ -11,7 +11,7 @@
 
 ---
 
-> 🇪🇸 **Nota para jueces y evaluadores en español:** Puedes leer la versión oficial traducida al español directamente en [README_ES.md](# WRO 2026 — Futuros Ingenieros).
+> 🇪🇸 **Nota para jueces y evaluadores en español:** Puedes leer la versión oficial traducida al español directamente en [README_ES.md](#wro-2026-futuros-ingenieros).
 
 ---
 
