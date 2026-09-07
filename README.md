@@ -741,7 +741,7 @@ The files linked in the **Datasheet** column are part of the static project docu
 
 ## Photographic and Multimedia Registry
 
-### Vehicle Views (WRO Mandatory)
+### Vehicle Views
 
 The 5 mandatory photographs are available in the `photos/vehicle/` folder:
 
@@ -1518,7 +1518,7 @@ Los archivos enlazados en la columna de **Ficha Técnica** forman parte de la do
 
 ## Registro Fotográfico y Multimedia
 
-### Vistas del Vehículo (Obligatorias WRO)
+### Vistas del Vehículo
 
 Las 5 fotografías reglamentarias se encuentran disponibles en la carpeta [`photos/vehicle/`](photos/vehicle/):
 
