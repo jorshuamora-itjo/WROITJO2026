@@ -24,7 +24,7 @@ This repository contains all engineering materials, CAD models, schematic diagra
 ### Repository Contents
 
 * **[`README.md`](README.md)**: Main technical documentation in English.
-* **[`README_ES.md`](README_ES.md)**: Full technical documentation in Spanish.
+* **[`README_ES.md`](https://github.com/jorshuamora-itjo/WROITJO2026/blob/main/README.md#wro-2026--futuros-ingenieros)**: Full technical documentation in Spanish.
 * **[`LICENSE`](LICENSE)**: MIT open-source license corresponding to team The Pits JO.
 * **[`.gitignore`](.gitignore)**: Configuration file to ignore build binaries and temporary files.
 * **[`src/`](src/)**: Control software code for all components programmed for the competition.
@@ -788,7 +788,7 @@ All rights reserved. Distributed under the [MIT License](LICENSE).
 
 ---
 
-> 🇬🇧 **Note for international judges:** You can read the official main documentation in English at [`README.md`](# WRO 2026 — Future Engineers).
+> 🇬🇧 **Note for international judges:** You can read the official main documentation in English at [`README.md`](README.md).
 
 ---
 
@@ -801,7 +801,7 @@ Este repositorio contiene todos los materiales de ingeniería, modelos CAD, diag
 ### Contenido del Repositorio
 
 * **[`README.md/`](README.md/)**: Documentación técnica principal en inglés.
-* **[`README_ES.md/`](README_ES.md/)**: Documentación técnica completa en español.
+* **[`README_ES.md/`](https://github.com/jorshuamora-itjo/WROITJO2026/blob/main/README.md#wro-2026--futuros-ingenieros)**: Documentación técnica completa en español.
 * **[`LICENSE`](LICENSE/)**: Licencia de código abierto MIT correspondiente al equipo The Pits JO.
 * **[`.gitignored`](.gitignored/)**: Archivo de configuración para ignorar temporales y binarios de compilación.
 * **[`src/`](src/)**: Diferentes códigos del software de control para todos los componentes que fueron programados para participar en la competencia.
