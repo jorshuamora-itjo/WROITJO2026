@@ -1,4 +1,4 @@
 Docs
 ===
 
-Additional documentation, datasheets, pinout tables, and pit checklists.
+Additional documentation, datasheets, flow charts, and pit checklists.
