@@ -236,6 +236,82 @@ float filtrarEMA(float lecturaActual, float lecturaAnterior, float alpha = 0.4) 
 
 ---
 
+## Meteoro Navigation Strategy for Obstacle Challenge
+
+To successfully complete the Obstacle Challenge, the Meteoro autonomous vehicle evolves its control system. Building upon lane centering via the PD algorithm and the Finite State Machine (FSM), we integrate a real-time computer vision system using the PixyCam 2 camera, which works in perfect synchronization with the MPU6050 inertial measurement unit.
+
+We maintain our Master-Slave distributed processing architecture connected via the I2C bus at a frequency of 100 kHz. In this way, the Master microcontroller assumes the responsibility of image processing and executing the decision-making logic, while the Slave is dedicated exclusively to actuating the Ackermann steering and the H-bridge traction motor.
+
+---
+
+### 1. Visual Perception and Anti-False Positive Filter
+
+The PixyCam 2 is responsible for identifying and classifying circuit signals by recognizing two well-defined chromatic signatures:
+* **Signature 1 (Green):** Indicates an obstacle that the vehicle must dodge by passing on the **LEFT**.
+* **Signature 2 (Red):** Indicates an obstacle that must be dodged by passing on the **RIGHT**.
+
+#### Proximity Filter and Debounce
+In a competition environment, light reflections on the floor or distant flashes can generate erroneous readings. To avoid sudden maneuvers or false evasions, we implement a two-step validation:
+1. **Filter by Vertical Dimension ($h$):** The system ignores any distant mark or visual noise. Only blocks whose height in pixels falls within the operational proximity range ($60\text{ px} \le h \le 240\text{ px}$) are considered valid.
+2. **Temporal Frame Debounce:** We require the color signature to be detected uninterruptedly for at least 3 consecutive frames (`UMBRAL_CONFIRMACION = 3`). Only when this condition is met are the maneuver flags (`verdeConfirmado` or `rojaConfirmada`) activated.
+
+---
+
+### 2. Finite State Machine (FSM) and Priority Hierarchy
+
+The Master microcontroller's state machine (`EstadoEsquive`) organizes the car's behavior under a strict hierarchical structure. This avoids conflicts when vision, ultrasound, or inertial orientation readings coincide:
+
+#### Decision Priority Matrix
+
+| Priority | Activation Condition | Activated State | Main Action |
+| :---: | :--- | :--- | :--- |
+| **1 (Highest)** | `verdeConfirmado` or `rojaConfirmada` | `ESQUIVANDO_IZQ` / `DER` | Immediately initiates the inertial dodge sequence. |
+| **2 (Medium)** | $d_{\text{front}} \le 90\text{ cm}$ and open side space | `GIRANDO_CURVA` | Executes an inertial turn of 63° towards the opening. |
+| **3 (Base)** | No obstacles or pending turns | `RECTA_NORMAL` | Centers the car in the lane using PD control ($\text{Zona Azul} = \pm 3.5\text{ cm}$). |
+
+---
+
+### 3. 3-Phase Dodge Algorithm (Closed Inertial Control)
+
+Instead of basing invasive maneuvers on fixed timers—which fail when tire grip changes or battery charge drops—Meteoro utilizes orientation measurements from the MPU6050 gyroscope. This ensures precise lane changing and re-entry in a trajectory parallel to the track.
+
+#### Evasive Sequence for Green Obstacle (Passing on the Left)
+
+1. **Phase 1: Diagonal Deviation (`ESQUIVANDO_IZQ`):**
+   * **Steering:** The servo is set to 125° (steering wheel turned to the right).
+   * **Transition criterion:** The gyroscope integrates angular velocity until registering a net rotation of $\theta_z \ge +10.0^\circ$ (or until the visual mark passes the coordinate $x \ge 220\text{ px}$).
+
+2. **Phase 2: Parallel Overtake (`REBASANDO_IZQ`):**
+   * **Steering:** Steering is centered to exactly 90°.
+   * **Transition criterion:** The car advances straight in the opposite lane to overtake the obstacle for $t_{\text{rebase}} = 600\text{ ms}$.
+
+3. **Phase 3: Straightening and Re-entry (`ENDEREZANDO_IZQ`):**
+   * **Steering:** Counter-steering is applied with steering set to 45°.
+   * **Transition criterion:** Gyroscope readings are monitored until cumulative inclination returns to $\theta_z \le 0.0^\circ$ (canceling initial inclination), or a maximum protection time of 200 ms elapses. Upon completion, the system smoothly returns to the `RECTA_NORMAL` state.
+
+> **Note:** The maneuver to dodge the Red Obstacle applies an inverse symmetrical geometry: initial turn at 35° until reaching $\theta_z \le -10.0^\circ$, centered forward motion at 90° for 600 ms, and straightening counter-steer at 135°.
+
+---
+
+### 4. Adaptive Corner Detection ("Side Gap")
+
+To prevent the car from confusing a nearby corner wall with an obstacle it needs to dodge, the algorithm intelligently combines information from the PixyCam and the three ultrasonic sensors:
+
+1. **Camera Memory Immunity:** If the camera detected any chromatic mark during the last second (`millis() - ultimoTiempoBloque < 1000 ms`), track turn activation is automatically disabled.
+2. **Open Path Criterion ("Side Gap"):** The system detects arrival at a corner by evaluating the sudden opening of a side wall ($d_{\text{izq}} > 90\text{ cm}$ or $d_{\text{der}} > 90\text{ cm}$) combined with the presence of the front wall within approach range ($55\text{ cm} < d_{\text{front}} \le 90\text{ cm}$).
+3. **Confirmation and Curve Integration:** After confirming two consecutive valid readings (`UMBRAL_CURVA = 2`), the system enters the `GIRANDO_CURVA` state, setting the steering to 35° or 145° depending on the side of the detected gap. The turn is actively maintained until the MPU6050 counts a real turn of $\theta_z = 63.0^\circ$.
+4. **Exit Protection (`COOLDOWN_CURVA`):** Once the curve is completed, the servo is centered for 200 ms to stabilize travel, and a temporary block of 2000 ms (`FRONT_COOLDOWN_CURVA`) is activated to prevent registering false turns with the exit wall.
+
+---
+
+### 5. Communication and I2C Distributed Architecture
+
+To avoid delays in the PD control calculation cycle caused by the processing time of the camera and ultrasonic readings, the physical execution of the motors is completely separated into the Slave microcontroller:
+* **Message Transmission:** The Master generates and transmits lightweight 2-byte packets in the format: `[target_angle, current_speed]`.
+* **Interrupt Processing:** The Slave receives commands via the `Wire.onReceive()` routine, storing values in variables declared as `volatile`. This guarantees that the physical update of the servo angle and motor power occurs in the main loop immediately, cleanly, and safely.
+
+---
+
 ## Mechanical Design and Evolution
 
 ### Post-Mortem Diagnosis and Mechanical Challenges in Pit Dinoco (v1.1)
