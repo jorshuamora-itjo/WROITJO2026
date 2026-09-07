@@ -11,7 +11,7 @@
 
 ---
 
-> 🇪🇸 **Nota para jueces y evaluadores en español:** Puedes leer la versión oficial traducida al español directamente en [README_ES.md]([wro-2026-futuros-ingenieros](https://github.com/jorshuamora-itjo/WROITJO2026/blob/main/README.md#wro-2026--futuros-ingenieros)).
+> 🇪🇸 **Nota para jueces y evaluadores en español:** Puedes leer la versión oficial traducida al español directamente en [README_ES.md](https://github.com/jorshuamora-itjo/WROITJO2026/blob/main/README.md#wro-2026--futuros-ingenieros).
 
 ---
 
